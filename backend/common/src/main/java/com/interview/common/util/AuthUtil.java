@@ -1,9 +1,11 @@
 package com.interview.common.util;
 
 import jakarta.servlet.http.HttpServletRequest;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplication;
 import org.springframework.stereotype.Component;
 
 @Component
+@ConditionalOnWebApplication(type = ConditionalOnWebApplication.Type.SERVLET)
 public class AuthUtil {
 
     private final JwtUtil jwtUtil;
