@@ -1,6 +1,7 @@
 package com.interview.interview.controller;
 
 import com.interview.common.entity.Interview;
+import com.interview.common.entity.Question;
 import com.interview.common.result.R;
 import com.interview.common.util.AuthUtil;
 import com.interview.interview.service.InterviewService;
@@ -72,6 +73,23 @@ public class InterviewController {
                 "startedAt", interview.getStartedAt() != null ? interview.getStartedAt().toString() : null,
                 "completedAt", interview.getCompletedAt() != null ? interview.getCompletedAt().toString() : null
         ));
+    }
+
+    @Data
+    public static class SaveQuestionRequest {
+        @NotBlank private String content;
+        @NotNull private Integer index;
+    }
+
+    @Operation(summary = "保存面试题目")
+    @PostMapping("/{interviewId}/questions")
+    public R<Map<String, String>> saveQuestion(
+            HttpServletRequest request,
+            @PathVariable Long interviewId,
+            @Valid @RequestBody SaveQuestionRequest req) {
+        Long userId = authUtil.getUserId(request);
+        Question q = interviewService.saveQuestion(interviewId, userId, req.getContent(), req.getIndex());
+        return R.ok(Map.of("questionId", q.getId().toString()));
     }
 
     @Operation(summary = "提交回答")

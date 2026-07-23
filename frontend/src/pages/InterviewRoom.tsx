@@ -75,22 +75,46 @@ export default function InterviewRoom() {
     }, 100);
   };
 
+  // 保存题目到后端并获取真实ID
+  const saveQuestionToBackend = async (content: string, idx: number): Promise<Question> => {
+    try {
+      const res = await interviewService.saveQuestion(id!, { content, index: idx });
+      const realId = res.data?.data?.questionId || `q_${Date.now()}`;
+      return {
+        id: realId,
+        interviewId: id || '',
+        index: idx,
+        content,
+        type: 'main',
+        expectedPoints: [],
+        knowledgeTags: [],
+        createdAt: new Date().toISOString(),
+      };
+    } catch {
+      // fallback: use local ID if API fails
+      return {
+        id: `q_${Date.now()}`,
+        interviewId: id || '',
+        index: idx,
+        content,
+        type: 'main',
+        expectedPoints: [],
+        knowledgeTags: [],
+        createdAt: new Date().toISOString(),
+      };
+    }
+  };
+
   // 初始化面试
   useEffect(() => {
     if (interviewStatus !== 'in_progress') setStatus('in_progress');
 
-    setTimeout(() => {
-      setCurrentQuestion({
-        id: 'q1',
-        interviewId: id || '',
-        index: 0,
-        content: '你好！欢迎参加本次模拟面试。首先请做一个简单的自我介绍，重点说说你在相关领域的项目经验和技术栈。',
-        type: 'main',
-        expectedPoints: ['自我介绍', '项目经验', '技术栈'],
-        knowledgeTags: ['自我介绍', '综合'],
-        createdAt: new Date().toISOString(),
-      });
-    }, 800);
+    const initFirstQuestion = async () => {
+      const firstContent = '你好！欢迎参加本次模拟面试。首先请做一个简单的自我介绍，重点说说你在相关领域的项目经验和技术栈。';
+      const q = await saveQuestionToBackend(firstContent, 0);
+      setCurrentQuestion(q);
+    };
+    setTimeout(() => { initFirstQuestion(); }, 800);
 
     timerRef.current = setInterval(() => {
       setElapsed((e) => e + 1);
@@ -165,17 +189,10 @@ export default function InterviewRoom() {
     } else {
       const nextIdx = prevIndex + 1;
       setQuestionIndex(nextIdx);
-      setTimeout(() => {
-        setCurrentQuestion({
-          id: `q_${Date.now()}`,
-          interviewId: id || '',
-          index: nextIdx,
-          content: getNextQuestion(nextIdx, ''),
-          type: 'main',
-          expectedPoints: ['技术理解', '实践经验'],
-          knowledgeTags: ['技术', '项目'],
-          createdAt: new Date().toISOString(),
-        });
+      setTimeout(async () => {
+        const content = getNextQuestion(nextIdx, '');
+        const q = await saveQuestionToBackend(content, nextIdx);
+        setCurrentQuestion(q);
         setElapsed(0);
         scrollToBottom();
       }, 200);

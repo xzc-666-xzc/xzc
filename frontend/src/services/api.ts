@@ -60,6 +60,9 @@ export const interviewService = {
   getById: (id: string) =>
     http.get<ApiResponse<unknown>>(`/interviews/${id}`),
 
+  saveQuestion: (interviewId: string, data: { content: string; index: number }) =>
+    http.post<ApiResponse<{ questionId: string }>>(`/interviews/${interviewId}/questions`, data),
+
   submitAnswer: (interviewId: string, data: { questionId: string; content: string; duration: number }) =>
     http.post<ApiResponse<unknown>>(`/interviews/${interviewId}/answers`, data),
 

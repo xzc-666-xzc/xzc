@@ -106,9 +106,9 @@ public class ReportService extends ServiceImpl<InterviewMapper, Interview> {
                 evalMap.put("starScore", eval.getStarScore());
                 evalMap.put("expressionScore", eval.getExpressionScore());
                 evalMap.put("overallScore", eval.getOverallScore());
-                evalMap.put("strengths", eval.getStrengths());
-                evalMap.put("weaknesses", eval.getWeaknesses());
-                evalMap.put("suggestions", eval.getSuggestions());
+                evalMap.put("strengths", parseJsonArray(eval.getStrengths()));
+                evalMap.put("weaknesses", parseJsonArray(eval.getWeaknesses()));
+                evalMap.put("suggestions", parseJsonArray(eval.getSuggestions()));
                 evalMap.put("referenceAnswer", eval.getReferenceAnswer());
                 detail.put("evaluation", evalMap);
             }
@@ -230,5 +230,15 @@ public class ReportService extends ServiceImpl<InterviewMapper, Interview> {
         }
         wq.setReviewed(true);
         wrongQuestionMapper.updateById(wq);
+    }
+
+    /** 将 JSON 字符串数组解析为 List，解析失败返回空列表 */
+    private List<String> parseJsonArray(String json) {
+        if (json == null || json.isEmpty()) return List.of();
+        try {
+            return objectMapper.readValue(json, new TypeReference<List<String>>() {});
+        } catch (Exception e) {
+            return List.of();
+        }
     }
 }

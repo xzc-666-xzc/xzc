@@ -15,6 +15,7 @@ public class Question {
     private Long interviewId;
 
     /** 题号 */
+    @TableField("`index`")
     private Integer index;
 
     /** 题目内容 */

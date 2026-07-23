@@ -50,14 +50,15 @@ export default function InterviewReportPage() {
     setError('');
     try {
       const res = await reportService.getByInterviewId(id!);
-      const data = res.data?.data as InterviewReport | undefined;
-      if (data) {
+      const data = (res.data as { code: number; message: string; data: InterviewReport | null })?.data;
+      if (data && data.totalScore !== undefined) {
         setReport(data);
       } else {
         setError('未找到面试报告');
       }
-    } catch {
-      setError('加载报告失败，请稍后重试');
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      setError(`加载报告失败: ${msg}`);
     } finally {
       setLoading(false);
     }
