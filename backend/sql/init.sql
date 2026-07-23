@@ -126,7 +126,7 @@ CREATE TABLE IF NOT EXISTS t_position (
 
 -- 初始化岗位数据
 INSERT INTO t_position (id, name, category, description, tags, is_hot) VALUES
-('pos-java-middle', 'Java后端开发-中级', '技术岗', '涵盖Java核心、Spring框架、微服务、数据库等知识点', '["Java","Spring Boot","MySQL","Redis","微服务"]', 1),
-('pos-pm-junior', '产品经理-初级', '产品岗', '需求分析、PRD撰写、用户研究、数据分析等核心能力', '["需求分析","PRD","用户研究","数据分析"]', 1),
-('pos-fe-middle', '前端开发-中级', '技术岗', 'React/Vue框架、TypeScript、工程化、性能优化等', '["React","TypeScript","Vite","性能优化"]', 0),
+('pos-java-middle', 'Java后端开发', '技术岗', '涵盖Java核心、Spring框架、微服务、数据库等知识点', '["Java","Spring Boot","MySQL","Redis","微服务"]', 1),
+('pos-pm-junior', '产品经理', '产品岗', '需求分析、PRD撰写、用户研究、数据分析等核心能力', '["需求分析","PRD","用户研究","数据分析"]', 1),
+('pos-fe-middle', '前端开发', '技术岗', 'React/Vue框架、TypeScript、工程化、性能优化等', '["React","TypeScript","Vite","性能优化"]', 0),
 ('pos-hr-general', 'HR-通用面试', '综合岗', '行为面试、STAR法则、沟通表达、综合素质评估', '["行为面试","STAR","沟通","综合素质"]', 0);
