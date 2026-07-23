@@ -1,0 +1,57 @@
+# ============================================================
+# API 网关配置
+# ============================================================
+server:
+  port: 8080
+
+spring:
+  application:
+    name: gateway
+  cloud:
+    nacos:
+      discovery:
+        server-addr: localhost:8848
+        namespace: dev
+    gateway:
+      discovery:
+        locator:
+          enabled: true
+          lower-case-service-id: true
+      routes:
+        # 用户服务
+        - id: user-service
+          uri: http://localhost:9001
+          predicates:
+            - Path=/api/user/**
+          filters:
+            - StripPrefix=1
+        # 面试服务
+        - id: interview-service
+          uri: http://localhost:9002
+          predicates:
+            - Path=/api/interviews/**,/api/positions/**
+          filters:
+            - StripPrefix=1
+        # AI服务
+        - id: ai-service
+          uri: http://localhost:9003
+          predicates:
+            - Path=/api/ai/**
+          filters:
+            - StripPrefix=1
+        # 报告服务
+        - id: report-service
+          uri: http://localhost:9004
+          predicates:
+            - Path=/api/reports/**,/api/wrong-book/**
+          filters:
+            - StripPrefix=1
+      # CORS跨域配置
+      globalcors:
+        cors-configurations:
+          '[/**]':
+            allowedOriginPatterns: "*"
+            allowedMethods: "*"
+            allowedHeaders: "*"
+            allowCredentials: true
+            maxAge: 3600
