@@ -11,6 +11,7 @@ import com.interview.interview.mapper.InterviewMapper;
 import com.interview.interview.mapper.AnswerMapper;
 import com.interview.interview.mapper.QuestionMapper;
 import com.interview.interview.mapper.EvaluationMapper;
+import com.interview.interview.mapper.WrongQuestionMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -26,6 +27,7 @@ public class InterviewService extends ServiceImpl<InterviewMapper, Interview> {
     private final AnswerMapper answerMapper;
     private final QuestionMapper questionMapper;
     private final EvaluationMapper evaluationMapper;
+    private final WrongQuestionMapper wrongQuestionMapper;
 
     @Transactional
     public Interview createInterview(Long userId, CreateInterviewRequest req) {
@@ -93,8 +95,8 @@ public class InterviewService extends ServiceImpl<InterviewMapper, Interview> {
             throw new BusinessException(400, "面试已完成");
         }
 
-        // 为所有回答生成评测
-        generateEvaluations(interviewId);
+        // 为所有回答生成评测（含错题本自动收录）
+        generateEvaluations(interview);
 
         // 计算总分
         int totalScore = calculateTotalScore(interviewId);
@@ -109,7 +111,8 @@ public class InterviewService extends ServiceImpl<InterviewMapper, Interview> {
         this.updateById(interview);
     }
 
-    private void generateEvaluations(Long interviewId) {
+    private void generateEvaluations(Interview interview) {
+        Long interviewId = interview.getId();
         List<Question> questions = questionMapper.selectList(
                 new LambdaQueryWrapper<Question>()
                         .eq(Question::getInterviewId, interviewId)
@@ -153,6 +156,16 @@ public class InterviewService extends ServiceImpl<InterviewMapper, Interview> {
             eval.setSuggestions(toJson(suggestions));
             eval.setReferenceAnswer("请结合具体项目和量化数据来组织回答，参考STAR法则（情境-任务-行动-结果）。");
             evaluationMapper.insert(eval);
+
+            // 低于60分自动收录到错题本
+            if (overall < 60) {
+                WrongQuestion wq = new WrongQuestion();
+                wq.setUserId(interview.getUserId());
+                wq.setInterviewId(interviewId);
+                wq.setQuestionId(q.getId());
+                wq.setReviewed(false);
+                wrongQuestionMapper.insert(wq);
+            }
         }
     }
 
