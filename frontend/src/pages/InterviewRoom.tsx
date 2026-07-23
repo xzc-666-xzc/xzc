@@ -30,6 +30,7 @@ import {
 } from '@ant-design/icons';
 import { useInterviewStore } from '@/stores';
 import { interviewService } from '@/services/api';
+import { getSelfIntroQuestion, getQuestionsForInterview } from '@/data/questions';
 import type { Question } from '@/types';
 
 const { Title, Text, Paragraph } = Typography;
@@ -105,13 +106,25 @@ export default function InterviewRoom() {
     }
   };
 
+  // 预加载题库（根据岗位和难度）
+  const questionPoolRef = useRef<ReturnType<typeof getQuestionsForInterview>>([]);
+  useEffect(() => {
+    if (config) {
+      questionPoolRef.current = getQuestionsForInterview(
+        config.positionId,
+        config.difficulty,
+        config.questionCount - 1, // 减去第一题自我介绍
+      );
+    }
+  }, [config]);
+
   // 初始化面试
   useEffect(() => {
     if (interviewStatus !== 'in_progress') setStatus('in_progress');
 
     const initFirstQuestion = async () => {
-      const firstContent = '你好！欢迎参加本次模拟面试。首先请做一个简单的自我介绍，重点说说你在相关领域的项目经验和技术栈。';
-      const q = await saveQuestionToBackend(firstContent, 0);
+      const intro = getSelfIntroQuestion();
+      const q = await saveQuestionToBackend(intro.content, 0);
       setCurrentQuestion(q);
     };
     setTimeout(() => { initFirstQuestion(); }, 800);
@@ -190,7 +203,12 @@ export default function InterviewRoom() {
       const nextIdx = prevIndex + 1;
       setQuestionIndex(nextIdx);
       setTimeout(async () => {
-        const content = getNextQuestion(nextIdx, '');
+        // 从预加载题库中取第 nextIdx-1 道题（第0题是自我介绍，题库从第1题开始）
+        const poolIdx = nextIdx - 1; // 题库索引（不含第一题自我介绍）
+        const template = questionPoolRef.current[poolIdx];
+        const content = template
+          ? template.content
+          : '请继续回答下一道面试题。';
         const q = await saveQuestionToBackend(content, nextIdx);
         setCurrentQuestion(q);
         setElapsed(0);
