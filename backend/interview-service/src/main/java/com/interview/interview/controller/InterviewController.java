@@ -2,6 +2,7 @@ package com.interview.interview.controller;
 
 import com.interview.common.entity.Interview;
 import com.interview.common.entity.Question;
+import com.interview.common.result.PageResult;
 import com.interview.common.result.R;
 import com.interview.common.util.AuthUtil;
 import com.interview.interview.service.InterviewService;
@@ -136,7 +137,7 @@ public class InterviewController {
 
     @Operation(summary = "获取面试历史")
     @GetMapping("/history")
-    public R<Map<String, Object>> getHistory(
+    public R<PageResult<Map<String, Object>>> getHistory(
             HttpServletRequest request,
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "10") int pageSize) {

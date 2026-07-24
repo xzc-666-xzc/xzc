@@ -5,6 +5,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.interview.common.entity.User;
 import com.interview.common.exception.BusinessException;
+import com.interview.common.result.ResultCode;
 import com.interview.user.mapper.UserMapper;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -22,10 +23,10 @@ public class UserService extends ServiceImpl<UserMapper, User> {
                 new LambdaQueryWrapper<User>().eq(User::getUsername, username)
         );
         if (user == null) {
-            throw new BusinessException(401, "用户名或密码错误");
+            throw new BusinessException(ResultCode.AUTH_FAILED, "用户名或密码错误");
         }
         if (!BCrypt.checkpw(password, user.getPassword())) {
-            throw new BusinessException(401, "用户名或密码错误");
+            throw new BusinessException(ResultCode.AUTH_FAILED, "用户名或密码错误");
         }
         return user;
     }
@@ -64,7 +65,7 @@ public class UserService extends ServiceImpl<UserMapper, User> {
     public void updateProfile(Long userId, Map<String, Object> body) {
         User user = this.getById(userId);
         if (user == null) {
-            throw new BusinessException(404, "用户不存在");
+            throw new BusinessException(ResultCode.NOT_FOUND, "用户不存在");
         }
 
         if (body.containsKey("username")) user.setUsername((String) body.get("username"));

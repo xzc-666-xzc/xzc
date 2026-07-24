@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.interview.common.entity.Position;
 import com.interview.common.exception.BusinessException;
 import com.interview.common.result.R;
+import com.interview.common.result.ResultCode;
 import com.interview.interview.mapper.PositionMapper;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -61,7 +62,7 @@ public class PositionController {
     public R<Map<String, Object>> getById(@PathVariable String id) {
         Position position = positionMapper.selectById(id);
         if (position == null) {
-            throw new BusinessException(404, "岗位不存在");
+            throw new BusinessException(ResultCode.NOT_FOUND, "岗位不存在");
         }
 
         Map<String, Object> result = new HashMap<>();

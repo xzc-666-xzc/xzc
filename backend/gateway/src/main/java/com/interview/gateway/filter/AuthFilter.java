@@ -7,12 +7,15 @@ import org.slf4j.LoggerFactory;
 import org.springframework.cloud.gateway.filter.GatewayFilterChain;
 import org.springframework.cloud.gateway.filter.GlobalFilter;
 import org.springframework.core.Ordered;
+import org.springframework.core.io.buffer.DataBuffer;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
 import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
 
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 
 @Component
@@ -47,7 +50,10 @@ public class AuthFilter implements GlobalFilter, Ordered {
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
             log.warn("请求缺少Token: {}", path);
             exchange.getResponse().setStatusCode(HttpStatus.UNAUTHORIZED);
-            return exchange.getResponse().setComplete();
+            exchange.getResponse().getHeaders().setContentType(MediaType.APPLICATION_JSON);
+            String body = buildErrorBody(40100, "未登录或Token已过期");
+            DataBuffer buffer = exchange.getResponse().bufferFactory().wrap(body.getBytes(StandardCharsets.UTF_8));
+            return exchange.getResponse().writeWith(Mono.just(buffer));
         }
 
         String token = authHeader.substring(7);
@@ -65,8 +71,19 @@ public class AuthFilter implements GlobalFilter, Ordered {
         } catch (Exception e) {
             log.warn("Token校验失败: {} - {}", path, e.getMessage());
             exchange.getResponse().setStatusCode(HttpStatus.UNAUTHORIZED);
-            return exchange.getResponse().setComplete();
+            exchange.getResponse().getHeaders().setContentType(MediaType.APPLICATION_JSON);
+            String body = buildErrorBody(40100, "Token无效或已过期");
+            DataBuffer buffer = exchange.getResponse().bufferFactory().wrap(body.getBytes(StandardCharsets.UTF_8));
+            return exchange.getResponse().writeWith(Mono.just(buffer));
         }
+    }
+
+    /**
+     * 构建标准 JSON 错误响应体
+     */
+    private String buildErrorBody(int code, String message) {
+        return "{\"code\":" + code + ",\"message\":\"" + message
+                + "\",\"data\":null,\"timestamp\":" + System.currentTimeMillis() + "}";
     }
 
     @Override

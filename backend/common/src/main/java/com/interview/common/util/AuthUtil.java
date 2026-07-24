@@ -1,5 +1,7 @@
 package com.interview.common.util;
 
+import com.interview.common.exception.BusinessException;
+import com.interview.common.result.ResultCode;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplication;
 import org.springframework.stereotype.Component;
@@ -20,7 +22,7 @@ public class AuthUtil {
     public Long getUserId(HttpServletRequest request) {
         String authHeader = request.getHeader("Authorization");
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-            throw new RuntimeException("未登录");
+            throw new BusinessException(ResultCode.UNAUTHORIZED);
         }
         return jwtUtil.getUserId(authHeader.substring(7));
     }

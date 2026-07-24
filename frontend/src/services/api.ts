@@ -18,11 +18,27 @@ http.interceptors.request.use((config) => {
 
 // 响应拦截器 - 统一错误处理
 http.interceptors.response.use(
-  (res) => res,
+  (res) => {
+    // 检查业务码：401xx 未认证，触发登录跳转
+    const bizCode = res.data?.code;
+    if (bizCode === 40100 || bizCode === 40101) {
+      localStorage.removeItem('token');
+      window.location.href = '/login';
+      return Promise.reject(new Error('未登录'));
+    }
+    // 检查业务码：40300 权限不足
+    if (bizCode === 40300) {
+      console.warn('权限不足:', res.data?.message);
+    }
+    return res;
+  },
   (error: AxiosError<ApiResponse>) => {
     if (error.response?.status === 401) {
       localStorage.removeItem('token');
       window.location.href = '/login';
+    }
+    if (error.response?.status === 403) {
+      console.warn('HTTP 403: 权限不足');
     }
     return Promise.reject(error);
   }

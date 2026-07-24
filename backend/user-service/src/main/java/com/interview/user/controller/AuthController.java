@@ -3,6 +3,7 @@ package com.interview.user.controller;
 import com.interview.common.entity.User;
 import com.interview.common.exception.BusinessException;
 import com.interview.common.result.R;
+import com.interview.common.result.ResultCode;
 import com.interview.common.util.JwtUtil;
 import com.interview.user.service.UserService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -69,7 +70,7 @@ public class AuthController {
     @PostMapping("/register")
     public R<Map<String, Object>> register(@Valid @RequestBody RegisterRequest req) {
         if (userService.existsByUsername(req.getUsername())) {
-            throw new BusinessException(400, "用户名已存在");
+            throw new BusinessException(ResultCode.CONFLICT, "用户名已存在");
         }
 
         User user = userService.register(req.getUsername(), req.getPassword(), req.getEmail(), req.getRole());

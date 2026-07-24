@@ -6,6 +6,8 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.interview.common.entity.*;
 import com.interview.common.exception.BusinessException;
+import com.interview.common.result.PageResult;
+import com.interview.common.result.ResultCode;
 import com.interview.interview.controller.InterviewController.CreateInterviewRequest;
 import com.interview.interview.mapper.InterviewMapper;
 import com.interview.interview.mapper.AnswerMapper;
@@ -49,10 +51,10 @@ public class InterviewService extends ServiceImpl<InterviewMapper, Interview> {
     public Interview getInterview(Long interviewId, Long userId) {
         Interview interview = this.getById(interviewId);
         if (interview == null) {
-            throw new BusinessException(404, "面试不存在");
+            throw new BusinessException(ResultCode.NOT_FOUND, "面试不存在");
         }
         if (!interview.getUserId().equals(userId)) {
-            throw new BusinessException(403, "无权访问该面试");
+            throw new BusinessException(ResultCode.FORBIDDEN, "无权访问该面试");
         }
         return interview;
     }
@@ -75,7 +77,7 @@ public class InterviewService extends ServiceImpl<InterviewMapper, Interview> {
                              String content, Integer duration) {
         Interview interview = getInterview(interviewId, userId);
         if (!"in_progress".equals(interview.getStatus())) {
-            throw new BusinessException(400, "面试已结束，无法提交回答");
+            throw new BusinessException(ResultCode.BAD_REQUEST, "面试已结束，无法提交回答");
         }
         Answer answer = new Answer();
         answer.setQuestionId(questionId);
@@ -92,7 +94,7 @@ public class InterviewService extends ServiceImpl<InterviewMapper, Interview> {
     public void completeInterview(Long interviewId, Long userId) {
         Interview interview = getInterview(interviewId, userId);
         if ("completed".equals(interview.getStatus())) {
-            throw new BusinessException(400, "面试已完成");
+            throw new BusinessException(ResultCode.BAD_REQUEST, "面试已完成");
         }
 
         // 为所有回答生成评测（含错题本自动收录）
@@ -204,7 +206,7 @@ public class InterviewService extends ServiceImpl<InterviewMapper, Interview> {
         }
     }
 
-    public Map<String, Object> getHistory(Long userId, int page, int pageSize) {
+    public PageResult<Map<String, Object>> getHistory(Long userId, int page, int pageSize) {
         IPage<Interview> pageResult = this.page(
                 new Page<>(page, pageSize),
                 new LambdaQueryWrapper<Interview>()
@@ -228,12 +230,7 @@ public class InterviewService extends ServiceImpl<InterviewMapper, Interview> {
                 })
                 .collect(Collectors.toList());
 
-        Map<String, Object> result = new HashMap<>();
-        result.put("records", records);
-        result.put("total", pageResult.getTotal());
-        result.put("page", page);
-        result.put("pageSize", pageSize);
-        return result;
+        return PageResult.of(records, pageResult.getTotal(), pageResult.getCurrent(), pageResult.getSize());
     }
 
     // --- helper methods ---

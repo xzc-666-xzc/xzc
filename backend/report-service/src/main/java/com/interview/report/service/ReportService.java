@@ -6,6 +6,8 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.interview.common.entity.*;
 import com.interview.common.exception.BusinessException;
+import com.interview.common.result.PageResult;
+import com.interview.common.result.ResultCode;
 import com.interview.report.mapper.InterviewMapper;
 import com.interview.report.mapper.QuestionMapper;
 import com.interview.report.mapper.AnswerMapper;
@@ -37,10 +39,10 @@ public class ReportService extends ServiceImpl<InterviewMapper, Interview> {
     public Map<String, Object> getReport(Long interviewId, Long userId) {
         Interview interview = this.getById(interviewId);
         if (interview == null || !interview.getUserId().equals(userId)) {
-            throw new BusinessException(403, "无权访问该报告");
+            throw new BusinessException(ResultCode.FORBIDDEN, "无权访问该报告");
         }
         if (!"completed".equals(interview.getStatus())) {
-            throw new BusinessException(400, "面试尚未完成，无法查看报告");
+            throw new BusinessException(ResultCode.BAD_REQUEST, "面试尚未完成，无法查看报告");
         }
 
         // 获取所有题目和回答
@@ -159,7 +161,7 @@ public class ReportService extends ServiceImpl<InterviewMapper, Interview> {
                 new LambdaQueryWrapper<Evaluation>().eq(Evaluation::getAnswerId, answerId)
         );
         if (eval == null) {
-            throw new BusinessException(404, "评测不存在");
+            throw new BusinessException(ResultCode.NOT_FOUND, "评测不存在");
         }
 
         Map<String, Object> detail = new HashMap<>();
@@ -179,7 +181,7 @@ public class ReportService extends ServiceImpl<InterviewMapper, Interview> {
     /**
      * 获取错题本
      */
-    public Map<String, Object> getWrongBook(Long userId, int page, int pageSize, String tags) {
+    public PageResult<Map<String, Object>> getWrongBook(Long userId, int page, int pageSize, String tags) {
         IPage<WrongQuestion> pageResult = wrongQuestionMapper.selectPage(
                 new Page<>(page, pageSize),
                 new LambdaQueryWrapper<WrongQuestion>()
@@ -211,12 +213,7 @@ public class ReportService extends ServiceImpl<InterviewMapper, Interview> {
             records.add(record);
         }
 
-        Map<String, Object> result = new HashMap<>();
-        result.put("records", records);
-        result.put("total", pageResult.getTotal());
-        result.put("page", page);
-        result.put("pageSize", pageSize);
-        return result;
+        return PageResult.of(records, pageResult.getTotal(), pageResult.getCurrent(), pageResult.getSize());
     }
 
     /**
@@ -226,7 +223,7 @@ public class ReportService extends ServiceImpl<InterviewMapper, Interview> {
     public void reviewWrongQuestion(Long id, Long userId) {
         WrongQuestion wq = wrongQuestionMapper.selectById(id);
         if (wq == null || !wq.getUserId().equals(userId)) {
-            throw new BusinessException(403, "无权操作");
+            throw new BusinessException(ResultCode.FORBIDDEN, "无权操作");
         }
         wq.setReviewed(true);
         wrongQuestionMapper.updateById(wq);

@@ -1,5 +1,6 @@
 package com.interview.report.controller;
 
+import com.interview.common.result.PageResult;
 import com.interview.common.result.R;
 import com.interview.common.util.AuthUtil;
 import com.interview.report.service.ReportService;
@@ -37,7 +38,7 @@ public class ReportController {
 
     @Operation(summary = "获取错题本列表")
     @GetMapping("/wrong-book")
-    public R<Map<String, Object>> getWrongBook(
+    public R<PageResult<Map<String, Object>>> getWrongBook(
             HttpServletRequest request,
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "10") int pageSize,

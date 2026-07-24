@@ -115,8 +115,25 @@ export interface InterviewReport {
 }
 
 // ---------- API 通用响应 ----------
+export interface ValidationError {
+  field: string;
+  message: string;
+}
+
 export interface ApiResponse<T = unknown> {
   code: number;
   message: string;
   data: T;
+  timestamp: number;
+  /** 字段级校验错误（仅参数校验失败时存在） */
+  errors?: ValidationError[];
+}
+
+/** 分页响应体 —— 对应后端 PageResult<T> */
+export interface PageData<T> {
+  records: T[];
+  total: number;
+  page: number;
+  pageSize: number;
+  pages: number;
 }
