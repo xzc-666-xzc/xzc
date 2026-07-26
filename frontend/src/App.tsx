@@ -10,6 +10,7 @@ import InterviewReport from '@/pages/InterviewReport';
 import InterviewHistory from '@/pages/InterviewHistory';
 import WrongBook from '@/pages/WrongBook';
 import Profile from '@/pages/Profile';
+import AdminPanel from '@/pages/admin/AdminPanel';
 
 // 路由守卫
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -38,6 +39,7 @@ export default function App() {
         <Route path="history" element={<InterviewHistory />} />
         <Route path="wrong-book" element={<WrongBook />} />
         <Route path="profile" element={<Profile />} />
+        <Route path="admin" element={<AdminPanel />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

@@ -1,31 +1,71 @@
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
+
+  html, body, #root {
+    height: 100%;
+    font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Microsoft YaHei', 'Segoe UI', Roboto, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    line-height: 1.7;
+  }
+
+  body {
+    background-color: #f8fafc;
+  }
 }
 
-html, body, #root {
-  height: 100%;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue',
-    Arial, 'Noto Sans', sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji';
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
+@layer components {
+  .page-container {
+    @apply p-6 max-w-[1200px] mx-auto;
+  }
 
-/* 页面通用容器 */
-.page-container {
-  padding: 24px;
-  max-width: 1200px;
-  margin: 0 auto;
-}
+  /* 隐私水印 */
+  .watermark {
+    position: fixed;
+    bottom: 16px;
+    right: 16px;
+    z-index: 9999;
+    pointer-events: none;
+    user-select: none;
+    color: rgba(0, 0, 0, 0.06);
+    font-size: 13px;
+    font-weight: 500;
+    white-space: nowrap;
+    transform: rotate(-15deg);
+    letter-spacing: 1px;
+  }
 
-/* 面试室全屏布局 */
-.interview-room {
-  height: 100vh;
-  display: flex;
-  flex-direction: column;
-  background: #1a1a2e;
-  color: #e0e0e0;
+  /* 得分圆环 */
+  .score-ring {
+    transition: stroke-dashoffset 1s ease-in-out;
+  }
+
+  /* 卡片微交互 */
+  .card-hover {
+    @apply transition-all duration-300;
+  }
+  .card-hover:hover {
+    @apply -translate-y-1 shadow-card-hover;
+  }
+
+  /* 按钮脉冲效果 */
+  .btn-glow {
+    @apply transition-all duration-200;
+  }
+  .btn-glow:hover {
+    @apply shadow-glow scale-[1.02];
+  }
+  .btn-glow:active {
+    @apply scale-[0.98];
+  }
 }
 
 /* 滚动条美化 */
@@ -42,4 +82,20 @@ html, body, #root {
 }
 ::-webkit-scrollbar-thumb:hover {
   background: #a0a0a0;
+}
+
+/* 暗色主题滚动条 */
+.interview-dark ::-webkit-scrollbar-thumb {
+  background: rgba(255,255,255,0.15);
+}
+.interview-dark ::-webkit-scrollbar-thumb:hover {
+  background: rgba(255,255,255,0.25);
+}
+
+/* 时间线样式 */
+.timeline-line {
+  @apply absolute left-[19px] top-10 bottom-0 w-px bg-slate-200;
+}
+.timeline-dot {
+  @apply absolute left-[12px] top-6 w-4 h-4 rounded-full border-2 border-primary-500 bg-white;
 }
