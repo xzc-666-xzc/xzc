@@ -7,6 +7,7 @@ import Dashboard from '@/pages/Dashboard';
 import InterviewSetup from '@/pages/InterviewSetup';
 import InterviewRoom from '@/pages/InterviewRoom';
 import InterviewReport from '@/pages/InterviewReport';
+import InterviewReportHub from '@/pages/InterviewReportHub';
 import InterviewHistory from '@/pages/InterviewHistory';
 import WrongBook from '@/pages/WrongBook';
 import Profile from '@/pages/Profile';
@@ -45,8 +46,9 @@ export default function App() {
         <Route path="setup" element={<InterviewSetup />} />
         <Route path="interview/:id" element={<InterviewRoom />} />
         <Route path="report/:id" element={<InterviewReport />} />
-        <Route path="history" element={<InterviewHistory />} />
-        <Route path="wrong-book" element={<WrongBook />} />
+        <Route path="reports" element={<InterviewReportHub />} />
+        <Route path="history" element={<Navigate to="/reports" replace />} />
+        <Route path="wrong-book" element={<Navigate to="/reports" replace />} />
         <Route path="profile" element={<Profile />} />
         <Route path="admin" element={<AdminPanel />} />
       </Route>

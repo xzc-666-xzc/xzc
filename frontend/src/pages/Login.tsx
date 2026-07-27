@@ -80,75 +80,54 @@ export default function LoginPage() {
   return (
     <div className="h-screen flex bg-[#0a0e17] overflow-hidden">
       {/* ==================== 左侧：品牌展示区 ==================== */}
-      <div className="hidden lg:flex w-[42%] xl:w-[45%] relative flex-col bg-gradient-to-br from-[#0c1220] via-[#0f1729] to-[#111d33] overflow-hidden">
-        {/* 背景装饰 */}
-        <div className="absolute inset-0 opacity-[0.03]"
-          style={{ backgroundImage: 'radial-gradient(circle at 25% 25%, #6366f1 1px, transparent 1px), radial-gradient(circle at 75% 75%, #6366f1 1px, transparent 1px)', backgroundSize: '60px 60px' }} />
+      <div className="hidden lg:flex w-[42%] xl:w-[45%] relative overflow-hidden bg-black">
+        {/* 左侧大图 */}
+        <img
+          src="/images/login_left_panel.jpg"
+          alt="AI 智能面试"
+          className="absolute inset-0 w-full h-full object-cover"
+        />
+        {/* 渐隐叠加层 */}
+        <div className="absolute inset-0 bg-gradient-to-r from-black/60 via-black/30 to-black/50" />
 
-        {/* 光晕 */}
-        <div className="absolute top-0 left-0 w-[500px] h-[500px] bg-indigo-500/8 rounded-full blur-[120px] -translate-x-1/2 -translate-y-1/2" />
-        <div className="absolute bottom-0 right-0 w-[400px] h-[400px] bg-blue-500/6 rounded-full blur-[100px] translate-x-1/3 translate-y-1/3" />
-
-        {/* 顶部 Logo */}
-        <div className="relative z-10 flex items-center gap-3 px-10 pt-10 pb-4">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-blue-600 flex items-center justify-center shadow-lg shadow-indigo-500/25">
-            <svg viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" className="w-5 h-5">
-              <polygon points="5,3 19,12 5,21" />
-            </svg>
+        {/* 内容覆盖层 */}
+        <div className="relative z-10 flex flex-col justify-between h-full p-10">
+          {/* 顶部 Logo */}
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-white/15 backdrop-blur-sm flex items-center justify-center border border-white/20">
+              <svg viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" className="w-5 h-5">
+                <polygon points="5,3 19,12 5,21" />
+              </svg>
+            </div>
+            <div>
+              <h1 className="text-white font-bold text-lg">智能面试评测平台</h1>
+              <p className="text-white/50 text-xs">AI-Powered Interview Simulation</p>
+            </div>
           </div>
-          <div>
-            <h1 className="text-white font-bold text-lg leading-tight">智能面试评测平台</h1>
-            <p className="text-indigo-300/70 text-xs">AI-Powered Interview Simulation</p>
-          </div>
-        </div>
 
-        {/* 两图并排 */}
-        <div className="relative z-10 flex-1 flex items-center px-8 gap-4">
-          {/* 左图 - Image 9 (较大) */}
-          <div className="flex-[1.2] relative group">
-            <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/10 to-blue-500/5 rounded-2xl blur-sm group-hover:from-indigo-500/15 group-hover:to-blue-500/10 transition-all duration-500" />
-            <div className="relative h-full bg-[#111827]/80 backdrop-blur-sm border border-slate-700/50 rounded-2xl overflow-hidden shadow-xl shadow-black/20">
-              <img
-                src="/images/login-hero.jpg"
-                alt="AI 智能面试"
-                className="w-full h-56 object-cover opacity-90 hover:opacity-100 transition-opacity duration-500"
-              />
-              <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-[#0f1729]/90 to-transparent px-4 py-3">
-                <p className="text-white font-semibold text-sm">AI 驱动的智能面试模拟</p>
-                <p className="text-slate-400 text-xs mt-0.5">真实场景 · 多维度评测 · 精准反馈</p>
+          {/* 中间标语 */}
+          <div className="space-y-3">
+            <h2 className="text-white text-3xl font-bold leading-tight">
+              用 AI 重新定义<br />面试准备方式
+            </h2>
+            <p className="text-white/60 text-sm max-w-xs">
+              真实模拟面试场景，多维度智能评测，助你在每次面试中脱颖而出
+            </p>
+          </div>
+
+          {/* 底部数据 */}
+          <div className="flex items-center gap-10">
+            {[
+              { value: '10,000+', label: '模拟面试' },
+              { value: '50+', label: '岗位方向' },
+              { value: '98%', label: '用户好评' },
+            ].map((stat) => (
+              <div key={stat.label}>
+                <p className="text-white font-bold text-xl">{stat.value}</p>
+                <p className="text-white/40 text-xs">{stat.label}</p>
               </div>
-            </div>
+            ))}
           </div>
-
-          {/* 右图 - Image 10 (较小) */}
-          <div className="flex-[0.8] relative group mt-8">
-            <div className="absolute inset-0 bg-gradient-to-br from-blue-500/10 to-cyan-500/5 rounded-2xl blur-sm group-hover:from-blue-500/15 group-hover:to-cyan-500/10 transition-all duration-500" />
-            <div className="relative h-full bg-[#111827]/80 backdrop-blur-sm border border-slate-700/50 rounded-2xl overflow-hidden shadow-xl shadow-black/20">
-              <img
-                src="/images/login-profile.jpg"
-                alt="个性化面试配置"
-                className="w-full h-40 object-cover opacity-90 hover:opacity-100 transition-opacity duration-500"
-              />
-              <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-[#0f1729]/90 to-transparent px-4 py-3">
-                <p className="text-white font-semibold text-sm">个性化岗位匹配与配置</p>
-                <p className="text-slate-400 text-xs mt-0.5">多岗位 · 多难度 · 自由组合</p>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* 底部数据 */}
-        <div className="relative z-10 flex items-center gap-8 px-10 pb-10">
-          {[
-            { value: '10,000+', label: '模拟面试' },
-            { value: '50+', label: '岗位方向' },
-            { value: '98%', label: '用户好评' },
-          ].map((stat) => (
-            <div key={stat.label} className="text-center">
-              <p className="text-white font-bold text-lg tabular-nums">{stat.value}</p>
-              <p className="text-slate-500 text-xs">{stat.label}</p>
-            </div>
-          ))}
         </div>
       </div>
 

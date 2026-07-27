@@ -29,7 +29,7 @@ const QUICK_REPLIES = [
 export default function InterviewRoom() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { config, interviewStatus, isPaused, addAnswer, setStatus, setPaused, isRecording, setRecording } = useInterviewStore();
+  const { config, interviewStatus, isPaused, addAnswer, setStatus, setPaused, isRecording, setRecording, customQuestions } = useInterviewStore();
 
   const [currentInput, setCurrentInput] = useState('');
   const [currentQuestion, setCurrentQuestion] = useState<Question | null>(null);
@@ -71,14 +71,23 @@ export default function InterviewRoom() {
   const questionPoolRef = useRef<ReturnType<typeof getQuestionsForInterview>>([]);
   useEffect(() => {
     if (config) {
+      // 专项练习模式：使用预设的错题+相似题
+      if (customQuestions && customQuestions.length > 0) {
+        questionPoolRef.current = customQuestions.map((content, i) => ({
+          id: `practice-${i}`,
+          content,
+          tags: ['专项练习'],
+        }));
+        return;
+      }
+      // 正常模式：从题库抽取
       const pool = getQuestionsForInterview(config.positionId, config.difficulty, config.questionCount - 1);
       questionPoolRef.current = pool;
-      // 如果题库返回的题目不够，用兜底题目补齐
       if (pool.length < config.questionCount - 1) {
         console.warn(`Question pool only has ${pool.length} questions, need ${config.questionCount - 1}`);
       }
     }
-  }, [config]);
+  }, [config, customQuestions]);
 
   useEffect(() => {
     if (interviewStatus !== 'in_progress') setStatus('in_progress');

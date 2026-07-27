@@ -42,6 +42,7 @@ interface InterviewState {
   isRecording: boolean;
   isPaused: boolean;
   interviewStatus: 'idle' | 'config' | 'in_progress' | 'paused' | 'completed';
+  customQuestions: string[] | null;  // 专项练习模式：预设题目列表
 
   setConfig: (config: InterviewConfig) => void;
   setInterview: (interview: Interview) => void;
@@ -52,6 +53,7 @@ interface InterviewState {
   setRecording: (v: boolean) => void;
   setPaused: (v: boolean) => void;
   setStatus: (s: InterviewState['interviewStatus']) => void;
+  setCustomQuestions: (qs: string[] | null) => void;
   reset: () => void;
 }
 
@@ -65,6 +67,7 @@ export const useInterviewStore = create<InterviewState>((set, get) => ({
   isRecording: false,
   isPaused: false,
   interviewStatus: 'idle',
+  customQuestions: null,
 
   setConfig: (config) => set({ config, interviewStatus: 'config' }),
   setInterview: (interview) => set({ currentInterview: interview }),
@@ -75,6 +78,7 @@ export const useInterviewStore = create<InterviewState>((set, get) => ({
   setRecording: (v) => set({ isRecording: v }),
   setPaused: (v) => set({ isPaused: v }),
   setStatus: (s) => set({ interviewStatus: s }),
+  setCustomQuestions: (qs) => set({ customQuestions: qs }),
   reset: () =>
     set({
       currentInterview: null,
@@ -86,5 +90,6 @@ export const useInterviewStore = create<InterviewState>((set, get) => ({
       isRecording: false,
       isPaused: false,
       interviewStatus: 'idle',
+      customQuestions: null,
     }),
 }));
