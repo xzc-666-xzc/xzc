@@ -140,12 +140,31 @@ public class LlmService {
                 【题目】%s
                 【候选人回答】%s
 
-                请从以下5个维度分别打分（0-100分）并给出评价：
-                1. contentScore: 内容准确性 - 回答是否正确、专业
-                2. logicScore: 逻辑条理性 - 表达是否清晰有条理
-                3. depthScore: 专业深度 - 是否深入理解原理
-                4. starScore: STAR法则 - 是否结构化表达
-                5. expressionScore: 表达沟通 - 语言表达是否流畅得体
+                请从以下5个维度分别打分（0-100分）：
+                1. contentScore: 内容准确性 - 回答是否正确、专业，技术点是否全面
+                2. logicScore: 逻辑条理性 - 表达是否清晰有条理，论证是否层层递进
+                3. depthScore: 专业深度 - 是否深入理解原理，能从源码/架构层面分析
+                4. starScore: STAR法则 - 是否结构化表达（情境-任务-行动-结果）
+                5. expressionScore: 表达沟通 - 语言表达是否流畅自然、自信得体
+
+                【评分标准】
+                - 95-100分：完美回答——内容全面准确、有深度、有量化数据、结构完整、表达精炼。只有真正无可挑剔的回答才给这个分数。
+                - 85-94分：优秀——核心内容正确、有较好的深度和结构，但有少量瑕疵或遗漏。
+                - 70-84分：良好——主要内容正确、有一定结构，但深度不足或缺少量化支撑。
+                - 50-69分：一般——基本概念大致正确但表述笼统、结构松散、缺乏深度。
+                - 25-49分：较差——内容明显不足、关键概念有误、逻辑混乱。
+                - 0-24分：极差——几乎没有实质内容、完全答非所问、或核心知识点全部错误。
+
+                【评语要求】
+                - strengths: 至少3条具体的优点，要指出回答中具体哪里做得好，不要泛泛而谈
+                - weaknesses: 至少3条真实的问题，要明确指出回答中缺了什么、哪里不对，语气真诚但建设性
+                - suggestions: 至少3条可落地的改进建议，告诉候选人下次遇到类似问题具体该怎么做
+                - referenceAnswer: 一段200-400字的高质量参考答案，体现该岗位%s级别的应有水平
+
+                【重要原则】
+                - 严格打分，不要手软——回答差就是差，可以给0分
+                - 评语要具体、个性化，像真人面试官写的，不要模板化
+                - 建议要有可操作性，不是"多学习多练习"这种空话
 
                 请以JSON格式返回：
                 {
@@ -155,12 +174,14 @@ public class LlmService {
                     "starScore": 82,
                     "expressionScore": 88,
                     "overallScore": 82,
-                    "strengths": ["优点1", "优点2"],
-                    "weaknesses": ["不足1", "不足2"],
-                    "suggestions": ["建议1", "建议2"],
-                    "referenceAnswer": "高分参考答案"
+                    "strengths": ["具体优点1", "具体优点2", "具体优点3"],
+                    "weaknesses": ["具体不足1", "具体不足2", "具体不足3"],
+                    "suggestions": ["可行建议1", "可行建议2", "可行建议3"],
+                    "referenceAnswer": "高质量的参考答案"
                 }
-                """, position, difficulty, question, answer);
+
+                只返回JSON，不要有其他内容。
+                """, position, difficulty, question, answer, difficulty);
     }
 
     private String buildFollowUpPrompt(String question, String answer, String position) {

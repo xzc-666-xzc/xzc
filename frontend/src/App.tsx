@@ -12,18 +12,27 @@ import WrongBook from '@/pages/WrongBook';
 import Profile from '@/pages/Profile';
 import AdminPanel from '@/pages/admin/AdminPanel';
 
-// 路由守卫
+// 需要登录才能访问
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const token = useUserStore((s) => s.token);
   if (!token) return <Navigate to="/login" replace />;
   return <>{children}</>;
 }
 
+// 已登录则跳回首页（用于登录/注册页）
+function GuestRoute({ children }: { children: React.ReactNode }) {
+  const token = useUserStore((s) => s.token);
+  if (token) return <Navigate to="/" replace />;
+  return <>{children}</>;
+}
+
 export default function App() {
   return (
     <Routes>
-      <Route path="/login" element={<LoginPage />} />
-      <Route path="/register" element={<RegisterPage />} />
+      {/* 未登录默认进入登录页 */}
+      <Route path="/login" element={<GuestRoute><LoginPage /></GuestRoute>} />
+      <Route path="/register" element={<GuestRoute><RegisterPage /></GuestRoute>} />
+      {/* 主界面需登录 */}
       <Route
         path="/"
         element={

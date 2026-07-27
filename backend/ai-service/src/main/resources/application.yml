@@ -8,11 +8,6 @@ spring:
     exclude:
       - org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration
       - org.springframework.boot.autoconfigure.data.redis.RedisAutoConfiguration
-  cloud:
-    nacos:
-      discovery:
-        server-addr: localhost:8848
-        namespace: dev
 
 ai:
   llm:

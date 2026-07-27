@@ -11,18 +11,24 @@ interface UserState {
 }
 
 export const useUserStore = create<UserState>((set) => ({
-  user: null,
+  user: JSON.parse(localStorage.getItem('user') || 'null'),
   token: localStorage.getItem('token'),
   setAuth: (user, token) => {
     localStorage.setItem('token', token);
+    localStorage.setItem('user', JSON.stringify(user));
     set({ user, token });
   },
   logout: () => {
     localStorage.removeItem('token');
+    localStorage.removeItem('user');
     set({ user: null, token: null });
   },
   updateUser: (partial) =>
-    set((s) => ({ user: s.user ? { ...s.user, ...partial } : null })),
+    set((s) => {
+      const updated = s.user ? { ...s.user, ...partial } : null;
+      if (updated) localStorage.setItem('user', JSON.stringify(updated));
+      return { user: updated };
+    }),
 }));
 
 // ---------- 面试状态 ----------

@@ -13,10 +13,6 @@ spring:
       - org.springframework.boot.autoconfigure.orm.jpa.HibernateJpaAutoConfiguration
       - org.mybatis.spring.boot.autoconfigure.MybatisAutoConfiguration
   cloud:
-    nacos:
-      discovery:
-        server-addr: localhost:8848
-        namespace: dev
     gateway:
       discovery:
         locator:
