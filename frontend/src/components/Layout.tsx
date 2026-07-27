@@ -164,7 +164,7 @@ export default function MainLayout() {
 
         {/* Sidebar footer */}
         {!collapsed && (
-          <div className="px-3 py-4 border-t border-slate-200/60">
+          <div className="px-3 py-4 border-t border-slate-200/60 space-y-2">
             <div className={`rounded-xl p-3 text-xs ${isAdminRole ? 'bg-teal-50' : 'bg-gradient-to-r from-primary-50 to-brand-50'}`}>
               <p className={`font-medium flex items-center gap-1 ${isAdminRole ? 'text-teal-700' : 'text-primary-700'}`}>
                 {icons.sparkle}
@@ -172,6 +172,14 @@ export default function MainLayout() {
               </p>
               <p className="text-slate-500 mt-1">{isAdminRole ? '数据驱动 · 精细管理' : '专业模拟 · 精准评测'}</p>
             </div>
+            {/* 退出登录按钮 */}
+            <button
+              onClick={handleLogout}
+              className="w-full flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl border border-red-200 bg-red-50/50 text-red-500 text-sm font-medium hover:bg-red-100 hover:border-red-300 active:scale-95 transition-all duration-200 cursor-pointer select-none"
+            >
+              {icons.logout}
+              退出登录
+            </button>
           </div>
         )}
       </aside>
@@ -181,7 +189,7 @@ export default function MainLayout() {
       <div className="flex-1 flex flex-col min-w-0">
         {/* Header */}
         {(isInterviewPage || isReportPage) ? null : (
-        <header className="h-16 bg-white/80 backdrop-blur-sm border-b border-slate-200/80 flex items-center justify-between px-5 shrink-0">
+        <header className="h-16 bg-white/80 backdrop-blur-sm border-b border-slate-200/80 flex items-center justify-between px-5 shrink-0 overflow-visible">
           <div className="flex items-center gap-4">
             <button
               onClick={() => setCollapsed(!collapsed)}
@@ -213,7 +221,7 @@ export default function MainLayout() {
           </div>
 
           {/* User */}
-          <div className="relative">
+          <div className="relative z-30">
             <button
               onClick={() => setShowUserMenu(!showUserMenu)}
               className="flex items-center gap-2 cursor-pointer hover:bg-slate-50 px-3 py-1.5 rounded-xl transition-colors"
@@ -226,8 +234,8 @@ export default function MainLayout() {
 
             {showUserMenu && (
               <>
-                <div className="fixed inset-0 z-10" onClick={() => setShowUserMenu(false)} />
-                <div className="absolute right-0 top-full mt-2 w-52 bg-white rounded-2xl shadow-card-hover border border-slate-100 py-2 z-20 animate-scale-in">
+                <div className="fixed inset-0 z-40" onClick={() => setShowUserMenu(false)} />
+                <div className="absolute right-0 top-full mt-2 w-52 bg-white rounded-2xl shadow-card-hover border border-slate-100 py-2 z-50 animate-scale-in">
                   <div className="px-4 py-3 border-b border-slate-50">
                     <p className="text-sm font-medium text-slate-800">{user?.username || '用户'}</p>
                     <p className="text-xs text-slate-400">{user?.email || ''}</p>
