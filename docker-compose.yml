@@ -1,11 +1,9 @@
-version: '3.8'
-
 services:
   mysql:
     image: mysql:8.0
     container_name: interview-mysql
     ports:
-      - "3306:3306"
+      - "3307:3306"
     environment:
       MYSQL_ROOT_PASSWORD: 123456
       MYSQL_DATABASE: smart_interview
@@ -134,7 +132,7 @@ services:
       dockerfile: Dockerfile
     container_name: interview-frontend
     ports:
-      - "80:80"
+      - "8081:80"
     depends_on:
       - gateway
     networks:
