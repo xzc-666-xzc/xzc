@@ -3,7 +3,6 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useInterviewStore } from '@/stores';
 import { interviewService } from '@/services/api';
 import { getSelfIntroQuestion, getQuestionsForInterview } from '@/data/questions';
-import Watermark from '@/components/Watermark';
 import type { Question } from '@/types';
 
 interface Feedback { overallScore: number; strengths: string[]; weaknesses: string[]; suggestion: string; }
@@ -179,7 +178,7 @@ export default function InterviewRoom() {
 
   return (
     <div className="h-full flex flex-col bg-[#111827] text-slate-200 interview-dark">
-      <Watermark text={config?.positionName || '面试中'} />
+
 
       {/* Top Bar */}
       <div className="flex items-center justify-between px-6 py-3 bg-slate-800/50 border-b border-slate-700 shrink-0">

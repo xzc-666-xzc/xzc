@@ -21,28 +21,28 @@ spring:
       routes:
         # 用户服务
         - id: user-service
-          uri: http://localhost:9001
+          uri: http://user-service:9001
           predicates:
             - Path=/api/user/**
           filters:
             - StripPrefix=1
-        # 面试服务
+        # 面试服务（岗位+面试）
         - id: interview-service
-          uri: http://localhost:9002
+          uri: http://interview-service:9002
           predicates:
             - Path=/api/interviews/**,/api/positions/**
           filters:
             - StripPrefix=1
         # AI服务
         - id: ai-service
-          uri: http://localhost:9003
+          uri: http://ai-service:9003
           predicates:
             - Path=/api/ai/**
           filters:
             - StripPrefix=1
         # 报告服务
         - id: report-service
-          uri: http://localhost:9004
+          uri: http://report-service:9004
           predicates:
             - Path=/api/reports/**,/api/wrong-book/**
           filters:

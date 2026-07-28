@@ -27,22 +27,6 @@
     @apply p-6 max-w-[1200px] mx-auto;
   }
 
-  /* 隐私水印 */
-  .watermark {
-    position: fixed;
-    bottom: 16px;
-    right: 16px;
-    z-index: 9999;
-    pointer-events: none;
-    user-select: none;
-    color: rgba(0, 0, 0, 0.06);
-    font-size: 13px;
-    font-weight: 500;
-    white-space: nowrap;
-    transform: rotate(-15deg);
-    letter-spacing: 1px;
-  }
-
   /* 得分圆环 */
   .score-ring {
     transition: stroke-dashoffset 1s ease-in-out;

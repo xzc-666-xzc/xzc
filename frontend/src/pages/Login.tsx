@@ -3,13 +3,13 @@ import { useNavigate } from 'react-router-dom';
 import { userService } from '@/services/api';
 import { useUserStore } from '@/stores';
 
-type Role = 'candidate' | 'hr' | 'teacher';
+type Role = 'candidate' | 'hr' | 'admin';
 type Tab = 'login' | 'register';
 
 const roleOptions: { value: Role; label: string; desc: string }[] = [
   { value: 'candidate', label: '求职者', desc: '参与模拟面试，提升面试技能' },
-  { value: 'hr', label: 'HR / 招聘方', desc: '评估候选人，定制面试题库' },
-  { value: 'teacher', label: '培训教师', desc: '管理题库，追踪学员进度' },
+  { value: 'hr', label: 'HR', desc: '评估候选人，定制面试题库' },
+  { value: 'admin', label: '管理员', desc: '系统管理与数据查看' },
 ];
 
 export default function LoginPage() {
@@ -21,7 +21,6 @@ export default function LoginPage() {
   const [loginError, setLoginError] = useState('');
   // Register fields
   const [regUsername, setRegUsername] = useState('');
-  const [regEmail, setRegEmail] = useState('');
   const [regPassword, setRegPassword] = useState('');
   const [regRole, setRegRole] = useState<Role>('candidate');
   const [regLoading, setRegLoading] = useState(false);
@@ -51,8 +50,7 @@ export default function LoginPage() {
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!regUsername.trim()) { setRegError('请输入用户名'); return; }
-    if (!regEmail.trim()) { setRegError('请输入邮箱'); return; }
+    if (!regUsername.trim()) { setRegError('请输入账号'); return; }
     if (!regPassword || regPassword.length < 6) { setRegError('密码长度不少于6位'); return; }
     setRegError('');
     setRegLoading(true);
@@ -60,15 +58,16 @@ export default function LoginPage() {
       const res = await userService.register({
         username: regUsername.trim(),
         password: regPassword,
-        email: regEmail.trim(),
+        email: `${regUsername.trim()}@interview.com`,
         role: regRole,
       });
       const { token, user } = res.data.data as { token: string; user: { role: string } };
       setAuth(user as never, token);
-      const isAdmin = user.role === 'admin' || user.role === 'hr' || user.role === 'teacher';
+      const isAdmin = user.role === 'admin' || user.role === 'hr';
       navigate(isAdmin ? '/admin' : '/', { replace: true });
-    } catch {
-      setRegError('注册失败，请重试');
+    } catch (err: any) {
+      const msg = err?.response?.data?.message || err?.message || '注册失败，请重试';
+      setRegError(msg);
     } finally {
       setRegLoading(false);
     }
@@ -84,10 +83,10 @@ export default function LoginPage() {
         {/* 左侧大图 */}
         <img
           src="/images/login_left_panel.jpg"
-          alt="AI 智能面试"
-          className="absolute inset-0 w-full h-full object-cover"
+          alt=""
+          className="absolute inset-0 w-full h-full object-contain scale-90"
         />
-        {/* 渐隐叠加层 */}
+        {/* 整体渐隐叠加层 */}
         <div className="absolute inset-0 bg-gradient-to-r from-black/60 via-black/30 to-black/50" />
 
         {/* 内容覆盖层 */}
@@ -101,18 +100,8 @@ export default function LoginPage() {
             </div>
             <div>
               <h1 className="text-white font-bold text-lg">智能面试评测平台</h1>
-              <p className="text-white/50 text-xs">AI-Powered Interview Simulation</p>
+              <p className="text-white/50 text-xs">专业模拟 · 精准评测</p>
             </div>
-          </div>
-
-          {/* 中间标语 */}
-          <div className="space-y-3">
-            <h2 className="text-white text-3xl font-bold leading-tight">
-              用 AI 重新定义<br />面试准备方式
-            </h2>
-            <p className="text-white/60 text-sm max-w-xs">
-              真实模拟面试场景，多维度智能评测，助你在每次面试中脱颖而出
-            </p>
           </div>
 
           {/* 底部数据 */}
@@ -254,23 +243,12 @@ export default function LoginPage() {
                 )}
 
                 <div>
-                  <label className="block text-sm font-medium text-slate-300 mb-2">用户名</label>
+                  <label className="block text-sm font-medium text-slate-300 mb-2">账号</label>
                   <input
                     type="text"
                     value={regUsername}
                     onChange={(e) => setRegUsername(e.target.value)}
-                    placeholder="请输入用户名"
-                    className="w-full px-4 py-3 bg-slate-800/50 border border-slate-600/50 rounded-xl text-slate-100 placeholder-slate-500 outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/30 transition-all text-sm"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-slate-300 mb-2">邮箱</label>
-                  <input
-                    type="email"
-                    value={regEmail}
-                    onChange={(e) => setRegEmail(e.target.value)}
-                    placeholder="请输入邮箱地址"
+                    placeholder="请输入账号"
                     className="w-full px-4 py-3 bg-slate-800/50 border border-slate-600/50 rounded-xl text-slate-100 placeholder-slate-500 outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/30 transition-all text-sm"
                   />
                 </div>
