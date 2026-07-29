@@ -23,10 +23,13 @@ public class UserService extends ServiceImpl<UserMapper, User> {
                 new LambdaQueryWrapper<User>().eq(User::getUsername, username)
         );
         if (user == null) {
-            throw new BusinessException(ResultCode.AUTH_FAILED, "用户名或密码错误");
+            throw new BusinessException(ResultCode.AUTH_FAILED, "该账号不存在");
+        }
+        if (user.getStatus() != null && user.getStatus() == 0) {
+            throw new BusinessException(ResultCode.AUTH_FAILED, "该账号已被禁用，请联系管理员");
         }
         if (!BCrypt.checkpw(password, user.getPassword())) {
-            throw new BusinessException(ResultCode.AUTH_FAILED, "用户名或密码错误");
+            throw new BusinessException(ResultCode.AUTH_FAILED, "密码错误，请重新输入");
         }
         return user;
     }

@@ -89,4 +89,11 @@ public class AuthController {
         );
         return R.ok(data);
     }
+
+    @Operation(summary = "检查账号是否已被注册")
+    @GetMapping("/check-username")
+    public R<Map<String, Boolean>> checkUsername(@RequestParam String username) {
+        boolean exists = userService.existsByUsername(username);
+        return R.ok(Map.of("exists", exists));
+    }
 }

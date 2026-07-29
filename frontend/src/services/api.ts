@@ -52,6 +52,9 @@ export const userService = {
   register: (data: { username: string; password: string; email: string; role: string }) =>
     http.post<ApiResponse<{ token: string; user: unknown }>>('/user/register', data),
 
+  checkAccount: (username: string) =>
+    http.get<ApiResponse<{ exists: boolean }>>('/user/check-username', { params: { username } }),
+
   getProfile: () =>
     http.get<ApiResponse<unknown>>('/user/profile'),
 
