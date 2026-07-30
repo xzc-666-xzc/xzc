@@ -1,3 +1,7 @@
+<<<<<<< HEAD
+=======
+[README.md](https://github.com/user-attachments/files/30488151/README.md)
+>>>>>>> 050a5082a2ed60fcbd02ede529b7b795b900aebe
 # 多模态智能模拟面试评测平台
 
 > Smart Interview — AI 驱动的多模态模拟面试评测系统
