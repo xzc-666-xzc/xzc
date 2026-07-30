@@ -23,7 +23,7 @@ const diffColors: Record<string, string> = {
 
 const posIcons: Record<string, string> = {
   'Java后端开发': '☕', '前端开发': '⚛️', '产品经理': '📱', 'HR-通用面试': '🤝',
-  'Go后端开发': '🔷', '测试开发': '🧪',
+  'Go后端开发': '🔷', '测试开发': '🧪', 'JavaAgent开发工程师': '🔧',
 };
 
 export default function Dashboard() {

@@ -36,6 +36,14 @@ export const MOCK_POSITIONS = [
     hot: false,
   },
   {
+    id: 'pos-java-agent',
+    name: 'JavaAgent开发工程师',
+    category: '技术研发',
+    description: 'Java Agent、字节码增强、JVM TI、APM、性能监控',
+    tags: JSON.stringify(['Java Agent', 'ASM', 'ByteBuddy', 'JVM', 'APM']),
+    hot: true,
+  },
+  {
     id: 'pos-go-middle',
     name: 'Go后端开发',
     category: '技术研发',

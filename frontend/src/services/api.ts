@@ -60,7 +60,16 @@ export const userService = {
 
   updateProfile: (data: unknown) =>
     http.put<ApiResponse<unknown>>('/user/profile', data),
+
+  getLeaderboard: () =>
+    http.get<ApiResponse<LeaderboardEntry[]>>('/user/leaderboard'),
 };
+
+export interface LeaderboardEntry {
+  username: string;
+  interviewCount: number;
+  avgScore: number;
+}
 
 // ==================== 岗位服务 ====================
 export const positionService = {

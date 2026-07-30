@@ -10,6 +10,7 @@ import InterviewReport from '@/pages/InterviewReport';
 import InterviewReportHub from '@/pages/InterviewReportHub';
 import InterviewHistory from '@/pages/InterviewHistory';
 import WrongBook from '@/pages/WrongBook';
+import Leaderboard from '@/pages/Leaderboard';
 import Profile from '@/pages/Profile';
 import AdminPanel from '@/pages/admin/AdminPanel';
 
@@ -49,6 +50,7 @@ export default function App() {
         <Route path="reports" element={<InterviewReportHub />} />
         <Route path="history" element={<Navigate to="/reports" replace />} />
         <Route path="wrong-book" element={<Navigate to="/reports" replace />} />
+        <Route path="leaderboard" element={<Leaderboard />} />
         <Route path="profile" element={<Profile />} />
         <Route path="admin" element={<AdminPanel />} />
       </Route>

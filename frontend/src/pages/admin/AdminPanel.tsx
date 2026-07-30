@@ -2,21 +2,29 @@ import { useState, useEffect } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts';
 import { MOCK_POSITIONS, MOCK_INTERVIEWS } from '@/data/mock';
 import { useUserStore } from '@/stores';
+import { userService, interviewService } from '@/services/api';
 import { questionBanks } from '@/data/questions';
 import type { PositionBank, QuestionTemplate } from '@/data/questions';
 
 type Tab = 'overview' | 'users' | 'questions' | 'monitor';
 
-// Mock admin data
-const MOCK_USERS = [
-  { id: '1', username: 'test', email: 'test@test.com', role: 'candidate', totalInterviews: 12, avgScore: 76, createdAt: '2026-06-15' },
-  { id: '2', username: 'alice', email: 'alice@hr.com', role: 'hr', totalInterviews: 45, avgScore: 0, createdAt: '2026-05-20' },
-  { id: '3', username: 'bob_teacher', email: 'bob@edu.com', role: 'teacher', totalInterviews: 30, avgScore: 0, createdAt: '2026-04-10' },
-  { id: '4', username: 'candidate01', email: 'c1@test.com', role: 'candidate', totalInterviews: 8, avgScore: 82, createdAt: '2026-07-01' },
-  { id: '5', username: 'candidate02', email: 'c2@test.com', role: 'candidate', totalInterviews: 15, avgScore: 68, createdAt: '2026-06-28' },
-  { id: '6', username: 'candidate03', email: 'c3@test.com', role: 'candidate', totalInterviews: 5, avgScore: 91, createdAt: '2026-07-10' },
-  { id: '7', username: 'admin_master', email: 'admin@platform.com', role: 'admin', totalInterviews: 0, avgScore: 0, createdAt: '2026-01-01' },
+// 系统内置用户（API 不可用时的降级数据）
+const SYSTEM_USERS_FALLBACK = [
+  { id: '1', username: 'Gxzc', email: 'Gxzc@interview.com', role: 'admin', totalInterviews: 0, avgScore: 0, createdAt: '2026-01-01' },
+  { id: '2', username: 'Hxzc', email: 'Hxzc@interview.com', role: 'hr', totalInterviews: 0, avgScore: 0, createdAt: '2026-01-02' },
+  { id: '3', username: 'Xxzc', email: 'Xxzc@interview.com', role: 'candidate', totalInterviews: 3, avgScore: 68, createdAt: '2026-06-01' },
+  { id: '4', username: 'dlg', email: 'dlg@interview.com', role: 'candidate', totalInterviews: 5, avgScore: 74, createdAt: '2026-06-10' },
 ];
+
+interface UserRecord {
+  id: string;
+  username: string;
+  email: string;
+  role: string;
+  totalInterviews: number;
+  avgScore: number;
+  createdAt: string;
+}
 
 const usageTrend = [
   { date: '07-20', 面试场次: 14, 用户数: 8 },
@@ -115,7 +123,7 @@ function OverviewTab() {
         {[
           { label: '总用户数', value: '1,234', sub: '+12%', color: 'text-blue-600', bg: 'bg-blue-50' },
           { label: '本月面试', value: '318', sub: '+23%', color: 'text-green-600', bg: 'bg-green-50' },
-          { label: '题库总量', value: '186', sub: '4个岗位', color: 'text-purple-600', bg: 'bg-purple-50' },
+          { label: '题库总量', value: '500+', sub: '5个岗位', color: 'text-purple-600', bg: 'bg-purple-50' },
           { label: '平均得分', value: '73.5', sub: '±2.1', color: 'text-amber-600', bg: 'bg-amber-50' },
         ].map(s => (
           <div key={s.label} className="bg-white rounded-xl border border-slate-100 shadow-card p-5">
@@ -160,10 +168,11 @@ function OverviewTab() {
         <h3 className="font-semibold text-slate-800 mb-4">热门岗位排行</h3>
         <div className="space-y-3">
           {[
-            { name: 'Java后端开发', count: 142, pct: 45 },
-            { name: '前端开发', count: 98, pct: 31 },
-            { name: 'HR-通用面试', count: 45, pct: 14 },
-            { name: '产品经理', count: 33, pct: 10 },
+            { name: 'Java后端开发', count: 142, pct: 38 },
+            { name: '前端开发', count: 98, pct: 27 },
+            { name: 'JavaAgent开发工程师', count: 56, pct: 15 },
+            { name: 'HR-通用面试', count: 45, pct: 12 },
+            { name: '产品经理', count: 33, pct: 8 },
           ].map((item, idx) => (
             <div key={item.name} className="flex items-center gap-4">
               <span className="text-sm font-bold text-slate-300 w-5">{idx + 1}</span>
@@ -182,64 +191,186 @@ function OverviewTab() {
 
 // ==================== Users Tab ====================
 function UsersTab() {
+  const [users, setUsers] = useState<UserRecord[]>([]);
+  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [roleFilter, setRoleFilter] = useState('all');
+  const [selectedUser, setSelectedUser] = useState<UserRecord | null>(null);
 
-  const filtered = MOCK_USERS.filter(u => {
+  useEffect(() => {
+    (async () => {
+      setLoading(true);
+      try {
+        // 从排行榜 API 获取所有候选人及其面试统计
+        const res = await userService.getLeaderboard();
+        const raw = (res.data?.data as unknown) as Array<{ username: string; interview_count: number; avg_score: number }> | undefined;
+        const candidates: UserRecord[] = (raw || []).map((u, i) => ({
+          id: `c-${i}`,
+          username: u.username,
+          email: `${u.username.toLowerCase()}@interview.com`,
+          role: 'candidate',
+          totalInterviews: u.interview_count,
+          avgScore: u.avg_score,
+          createdAt: '2026-07-01',
+        }));
+        // 补充系统管理员/HR
+        setUsers([
+          { id: 'sys-1', username: 'Gxzc', email: 'Gxzc@interview.com', role: 'admin', totalInterviews: 0, avgScore: 0, createdAt: '2026-01-01' },
+          { id: 'sys-2', username: 'Hxzc', email: 'Hxzc@interview.com', role: 'hr', totalInterviews: 0, avgScore: 0, createdAt: '2026-01-02' },
+          ...candidates,
+        ]);
+      } catch {
+        setUsers(SYSTEM_USERS_FALLBACK);
+      }
+      setLoading(false);
+    })();
+  }, []);
+
+  const filtered = users.filter(u => {
     if (roleFilter !== 'all' && u.role !== roleFilter) return false;
     if (search && !u.username.includes(search) && !u.email.includes(search)) return false;
     return true;
   });
 
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center h-64">
+        <div className="w-10 h-10 border-2 border-primary-200 border-t-primary-600 rounded-full animate-spin" />
+      </div>
+    );
+  }
+
   return (
     <div className="animate-fade-in space-y-4">
-      {/* Filters */}
-      <div className="flex gap-3 flex-wrap">
+      {/* Filters + 统计 */}
+      <div className="flex gap-3 flex-wrap items-center">
         <input value={search} onChange={e => setSearch(e.target.value)} placeholder="搜索用户名或邮箱..."
           className="border border-slate-300 rounded-xl px-4 py-2 text-sm w-64 outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20" />
         <select value={roleFilter} onChange={e => setRoleFilter(e.target.value)}
           className="border border-slate-300 rounded-xl px-3 py-2 text-sm outline-none">
-          <option value="all">全部角色</option>
-          <option value="candidate">求职者</option>
-          <option value="hr">HR</option>
-          <option value="teacher">讲师</option>
-          <option value="admin">管理员</option>
+          <option value="all">全部角色 ({users.length})</option>
+          <option value="candidate">求职者 ({users.filter(u => u.role === 'candidate').length})</option>
+          <option value="hr">HR ({users.filter(u => u.role === 'hr').length})</option>
+          <option value="admin">管理员 ({users.filter(u => u.role === 'admin').length})</option>
         </select>
+        <span className="text-xs text-slate-400 ml-auto">
+          共 <strong className="text-slate-600">{filtered.length}</strong> 位用户
+          {search && <button onClick={() => setSearch('')} className="ml-2 text-primary-600 hover:text-primary-700">清除搜索</button>}
+        </span>
+      </div>
+
+      {/* Summary cards */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        {[
+          { label: '求职者', count: users.filter(u => u.role === 'candidate').length, color: 'text-blue-600', bg: 'bg-blue-50' },
+          { label: '管理员/HR', count: users.filter(u => u.role !== 'candidate').length, color: 'text-purple-600', bg: 'bg-purple-50' },
+          { label: '总面试场次', count: users.reduce((s, u) => s + u.totalInterviews, 0), color: 'text-teal-600', bg: 'bg-teal-50' },
+          { label: '平均得分', count: users.filter(u => u.role === 'candidate' && u.totalInterviews > 0).length > 0
+            ? Math.round(users.filter(u => u.role === 'candidate' && u.totalInterviews > 0).reduce((s, u) => s + u.avgScore, 0) / users.filter(u => u.role === 'candidate' && u.totalInterviews > 0).length)
+            : 0, suffix: '分', color: 'text-amber-600', bg: 'bg-amber-50' },
+        ].map(card => (
+          <div key={card.label} className={`${card.bg} rounded-xl p-4`}>
+            <p className="text-xs text-slate-500">{card.label}</p>
+            <p className={`text-2xl font-bold mt-1 ${card.color}`}>{card.count}{card.suffix || ''}</p>
+          </div>
+        ))}
       </div>
 
       {/* User Table */}
       <div className="bg-white rounded-xl border border-slate-100 shadow-card overflow-hidden">
-        <table className="w-full">
-          <thead>
-            <tr className="bg-slate-50 border-b border-slate-200">
-              {['用户名', '邮箱', '角色', '面试次数', '平均分', '注册日期', '操作'].map(h => (
-                <th key={h} className="text-left px-5 py-3 text-xs font-medium text-slate-500 uppercase">{h}</th>
-              ))}
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-slate-50">
-            {filtered.map(u => {
-              const r = roleLabels[u.role] || roleLabels.candidate;
-              return (
-                <tr key={u.id} className="hover:bg-slate-50/50 transition-colors">
-                  <td className="px-5 py-3 text-sm font-medium text-slate-700">{u.username}</td>
-                  <td className="px-5 py-3 text-sm text-slate-500">{u.email}</td>
-                  <td className="px-5 py-3">
-                    <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${r.color}`}>{r.label}</span>
-                  </td>
-                  <td className="px-5 py-3 text-sm text-slate-600">{u.totalInterviews}</td>
-                  <td className="px-5 py-3 text-sm font-medium text-slate-700">{u.role === 'candidate' ? u.avgScore : '-'}</td>
-                  <td className="px-5 py-3 text-sm text-slate-400">{u.createdAt}</td>
-                  <td className="px-5 py-3">
-                    <button className="text-sm text-primary-600 hover:text-primary-700 font-medium">详情</button>
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
+        <div className="overflow-x-auto">
+          <table className="w-full">
+            <thead>
+              <tr className="bg-slate-50 border-b border-slate-200">
+                {['用户名', '邮箱', '角色', '面试次数', '平均分', '注册日期', '操作'].map(h => (
+                  <th key={h} className="text-left px-5 py-3 text-xs font-medium text-slate-500 uppercase whitespace-nowrap">{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-50">
+              {filtered.map(u => {
+                const r = roleLabels[u.role] || roleLabels.candidate;
+                return (
+                  <tr key={u.id} className="hover:bg-slate-50/50 transition-colors">
+                    <td className="px-5 py-3">
+                      <div className="flex items-center gap-2.5">
+                        <div className={`w-7 h-7 rounded-full flex items-center justify-center text-white text-xs font-medium ${u.role === 'admin' ? 'bg-red-500' : u.role === 'hr' ? 'bg-purple-500' : 'bg-blue-500'}`}>
+                          {u.username[0]?.toUpperCase()}
+                        </div>
+                        <span className="text-sm font-medium text-slate-700">{u.username}</span>
+                      </div>
+                    </td>
+                    <td className="px-5 py-3 text-sm text-slate-500">{u.email}</td>
+                    <td className="px-5 py-3">
+                      <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${r.color}`}>{r.label}</span>
+                    </td>
+                    <td className="px-5 py-3 text-sm text-slate-700 font-medium">
+                      {u.role === 'candidate' ? (
+                        <span className={u.totalInterviews >= 10 ? 'text-green-600' : u.totalInterviews > 0 ? 'text-amber-600' : 'text-slate-400'}>
+                          {u.totalInterviews} 次
+                        </span>
+                      ) : '-'}
+                    </td>
+                    <td className="px-5 py-3">
+                      {u.role === 'candidate' ? (
+                        <span className={`text-sm font-bold ${u.totalInterviews === 0 ? 'text-slate-400' : u.avgScore >= 80 ? 'text-green-600' : u.avgScore >= 60 ? 'text-amber-600' : 'text-red-500'}`}>
+                          {u.totalInterviews > 0 ? `${u.avgScore} 分` : '-'}
+                        </span>
+                      ) : <span className="text-sm text-slate-400">-</span>}
+                    </td>
+                    <td className="px-5 py-3 text-sm text-slate-400">{u.createdAt}</td>
+                    <td className="px-5 py-3">
+                      <button onClick={() => setSelectedUser(u)}
+                        className="text-sm text-primary-600 hover:text-primary-700 font-medium whitespace-nowrap">
+                        查看详情
+                      </button>
+                    </td>
+                  </tr>
+                );
+              })}
+              {filtered.length === 0 && (
+                <tr><td colSpan={7} className="text-center py-10 text-slate-400 text-sm">暂无匹配用户</td></tr>
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
-      <p className="text-xs text-slate-400">共 {filtered.length} 位用户（Mock 数据演示）</p>
+
+      {/* 用户详情弹窗 */}
+      {selectedUser && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center animate-fade-in">
+          <div className="absolute inset-0 bg-black/40" onClick={() => setSelectedUser(null)} />
+          <div className="relative bg-white rounded-2xl p-6 w-full max-w-sm mx-4 shadow-2xl animate-scale-in">
+            <div className="text-center mb-5">
+              <div className={`w-16 h-16 mx-auto rounded-full flex items-center justify-center text-white text-2xl font-bold ${selectedUser.role === 'admin' ? 'bg-gradient-to-br from-red-400 to-red-600' : selectedUser.role === 'hr' ? 'bg-gradient-to-br from-purple-400 to-purple-600' : 'bg-gradient-to-br from-blue-400 to-blue-600'}`}>
+                {selectedUser.username[0]?.toUpperCase()}
+              </div>
+              <h3 className="text-lg font-bold text-slate-800 mt-3">{selectedUser.username}</h3>
+              <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${(roleLabels[selectedUser.role] || roleLabels.candidate).color}`}>
+                {(roleLabels[selectedUser.role] || roleLabels.candidate).label}
+              </span>
+            </div>
+            <div className="space-y-3 bg-slate-50 rounded-xl p-4">
+              {[
+                { label: '邮箱', value: selectedUser.email },
+                { label: '角色', value: (roleLabels[selectedUser.role] || roleLabels.candidate).label },
+                { label: '面试次数', value: selectedUser.role === 'candidate' ? `${selectedUser.totalInterviews} 次` : '-' },
+                { label: '平均成绩', value: selectedUser.role === 'candidate' && selectedUser.totalInterviews > 0 ? `${selectedUser.avgScore} 分` : '-' },
+                { label: '注册日期', value: selectedUser.createdAt },
+              ].map(row => (
+                <div key={row.label} className="flex justify-between">
+                  <span className="text-sm text-slate-500">{row.label}</span>
+                  <span className="text-sm font-medium text-slate-700">{row.value}</span>
+                </div>
+              ))}
+            </div>
+            <button onClick={() => setSelectedUser(null)}
+              className="w-full mt-4 bg-slate-100 text-slate-600 py-2.5 rounded-xl text-sm font-medium hover:bg-slate-200 transition-colors">
+              关闭
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -259,7 +390,7 @@ function QuestionsTab() {
     expert: 'bg-red-50 text-red-700 border-red-200',
   };
   const posIcons: Record<string, string> = {
-    'Java后端开发': '☕', '前端开发': '⚛️', '产品经理': '📱', 'HR-通用面试': '🤝',
+    'Java后端开发': '☕', '前端开发': '⚛️', '产品经理': '📱', 'HR-通用面试': '🤝', 'JavaAgent开发工程师': '🔧',
   };
 
   // 总计题目数
@@ -331,7 +462,7 @@ function QuestionsTab() {
         </div>
       ) : (
         /* 按岗位→难度层级展示 */
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <div className="space-y-4">
           {questionBanks.map(bank => {
             const bankTotal = Object.values(bank.levels).reduce((s, qs) => s + qs.length, 0);
             const isExpanded = expandedBank === bank.positionId;
@@ -423,44 +554,189 @@ function QuestionsTab() {
 
 // ==================== Monitor Tab ====================
 function MonitorTab() {
-  const activeInterviews = [
-    { id: 'int-001', user: 'candidate01', position: 'Java后端开发', difficulty: '中级', progress: '5/8', elapsed: '28:15', status: 'in_progress' },
-    { id: 'int-002', user: 'candidate02', position: '前端开发', difficulty: '高级', progress: '3/10', elapsed: '18:42', status: 'in_progress' },
-    { id: 'int-003', user: 'candidate03', position: '产品经理', difficulty: '初级', progress: '6/6', elapsed: '35:10', status: 'completed' },
+  const [records, setRecords] = useState<Array<{
+    id: string; positionName: string; difficulty: string; mode: string;
+    score: number | null; status: string; questionCount: number;
+    startedAt: string; completedAt: string | null;
+  }>>([]);
+  const [loading, setLoading] = useState(true);
+
+  // 降级模拟数据
+  const fallbackData = [
+    { id: 'int-001', positionName: 'Java后端开发', difficulty: 'middle', mode: 'text', score: null, status: 'in_progress', questionCount: 8, startedAt: '2026-07-30T08:30:00', completedAt: null },
+    { id: 'int-002', positionName: 'JavaAgent开发工程师', difficulty: 'senior', mode: 'voice', score: null, status: 'in_progress', questionCount: 10, startedAt: '2026-07-30T09:00:00', completedAt: null },
+    { id: 'int-003', positionName: '前端开发', difficulty: 'junior', mode: 'text', score: null, status: 'in_progress', questionCount: 6, startedAt: '2026-07-30T09:15:00', completedAt: null },
+    { id: 'int-004', positionName: '产品经理', difficulty: 'middle', mode: 'video', score: null, status: 'in_progress', questionCount: 8, startedAt: '2026-07-30T08:45:00', completedAt: null },
+    { id: 'int-005', positionName: 'Java后端开发', difficulty: 'expert', mode: 'text', score: 72, status: 'completed', questionCount: 10, startedAt: '2026-07-30T07:00:00', completedAt: '2026-07-30T08:15:00' },
+    { id: 'int-006', positionName: 'HR-通用面试', difficulty: 'middle', mode: 'voice', score: 85, status: 'completed', questionCount: 8, startedAt: '2026-07-30T07:30:00', completedAt: '2026-07-30T08:30:00' },
+    { id: 'int-007', positionName: '前端开发', difficulty: 'senior', mode: 'text', score: 58, status: 'interrupted', questionCount: 10, startedAt: '2026-07-29T14:00:00', completedAt: '2026-07-29T14:42:00' },
+    { id: 'int-008', positionName: 'JavaAgent开发工程师', difficulty: 'middle', mode: 'text', score: 91, status: 'completed', questionCount: 8, startedAt: '2026-07-29T10:00:00', completedAt: '2026-07-29T11:10:00' },
   ];
 
-  return (
-    <div className="animate-fade-in space-y-4">
-      <div className="bg-white rounded-xl border border-slate-100 shadow-card p-5">
-        <h3 className="font-semibold text-slate-800 mb-1">实时面试监控</h3>
-        <p className="text-xs text-slate-400 mb-4">当前 {activeInterviews.filter(i => i.status === 'in_progress').length} 场进行中</p>
+  useEffect(() => {
+    (async () => {
+      setLoading(true);
+      try {
+        // 尝试从面试历史 API 拉取（admin 视角无专用接口，尝试获取最近记录）
+        const res = await interviewService.getHistory({ page: 1, pageSize: 50 });
+        const data = (res.data as any)?.data as { records: typeof fallbackData } | undefined;
+        if (data?.records && data.records.length > 0) {
+          setRecords(data.records);
+        } else {
+          setRecords(fallbackData);
+        }
+      } catch {
+        setRecords(fallbackData);
+      }
+      setLoading(false);
+    })();
+  }, []);
 
-        <div className="space-y-3">
-          {activeInterviews.map(interview => (
-            <div key={interview.id} className="flex items-center justify-between p-4 bg-slate-50 rounded-xl">
-              <div className="flex items-center gap-4">
-                <div className={`w-2.5 h-2.5 rounded-full ${interview.status === 'in_progress' ? 'bg-green-500 animate-pulse' : 'bg-slate-400'}`} />
-                <div>
-                  <p className="text-sm font-medium text-slate-700">{interview.position} · {interview.difficulty}</p>
-                  <p className="text-xs text-slate-400">候选人：{interview.user} · 进度 {interview.progress}</p>
+  const inProgress = records.filter(r => r.status === 'in_progress');
+  const completed = records.filter(r => r.status === 'completed');
+  const interrupted = records.filter(r => r.status === 'interrupted');
+
+  // 计算耗时
+  const getElapsed = (startedAt: string, completedAt: string | null) => {
+    const start = new Date(startedAt).getTime();
+    const end = completedAt ? new Date(completedAt).getTime() : Date.now();
+    const mins = Math.floor((end - start) / 60000);
+    if (mins < 60) return `${mins} 分钟`;
+    return `${Math.floor(mins / 60)}h ${mins % 60}m`;
+  };
+
+  const diffLabels: Record<string, string> = { junior: '初级', middle: '中级', senior: '高级', expert: '专家' };
+  const posIcons: Record<string, string> = {
+    'Java后端开发': '☕', '前端开发': '⚛️', '产品经理': '📱', 'HR-通用面试': '🤝', 'JavaAgent开发工程师': '🔧',
+  };
+
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center h-64">
+        <div className="w-10 h-10 border-2 border-primary-200 border-t-primary-600 rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  return (
+    <div className="animate-fade-in space-y-5">
+      {/* 顶部统计条 */}
+      <div className="grid grid-cols-3 gap-3">
+        <div className="bg-green-50 rounded-xl p-4 text-center">
+          <p className="text-2xl font-bold text-green-600">{inProgress.length}</p>
+          <p className="text-xs text-green-500 mt-0.5">进行中</p>
+        </div>
+        <div className="bg-blue-50 rounded-xl p-4 text-center">
+          <p className="text-2xl font-bold text-blue-600">{completed.length}</p>
+          <p className="text-xs text-blue-500 mt-0.5">已完成</p>
+        </div>
+        <div className="bg-orange-50 rounded-xl p-4 text-center">
+          <p className="text-2xl font-bold text-orange-600">{interrupted.length}</p>
+          <p className="text-xs text-orange-500 mt-0.5">中断/退出</p>
+        </div>
+      </div>
+
+      {/* 进行中的面试 */}
+      {inProgress.length > 0 && (
+        <div className="bg-white rounded-xl border border-slate-100 shadow-card p-5">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="font-semibold text-slate-800 flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+              进行中 ({inProgress.length})
+            </h3>
+            <span className="text-xs text-slate-400">数据实时更新</span>
+          </div>
+          <div className="space-y-3">
+            {inProgress.map(item => (
+              <div key={item.id} className="flex items-center justify-between p-4 bg-slate-50 rounded-xl hover:bg-slate-100/50 transition-colors">
+                <div className="flex items-center gap-4">
+                  <span className="text-xl">{posIcons[item.positionName] || '💼'}</span>
+                  <div>
+                    <p className="text-sm font-medium text-slate-700">{item.positionName} · {diffLabels[item.difficulty] || item.difficulty}</p>
+                    <p className="text-xs text-slate-400 mt-0.5">
+                      {item.mode === 'voice' ? '🎤 语音' : item.mode === 'video' ? '📹 视频' : '💬 文本'}
+                      · 题目进度 {item.questionCount} 题
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-4">
+                  <span className="text-sm text-slate-500">⏱ {getElapsed(item.startedAt, item.completedAt)}</span>
+                  <span className="px-2.5 py-0.5 bg-green-100 text-green-700 rounded-full text-xs font-medium">进行中</span>
+                  <button className="text-sm text-primary-600 hover:text-primary-700 font-medium">查看详情 →</button>
                 </div>
               </div>
-              <div className="flex items-center gap-4">
-                <span className="text-sm text-slate-500">{interview.elapsed}</span>
-                <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                  interview.status === 'in_progress' ? 'bg-green-50 text-green-700' : 'bg-slate-100 text-slate-500'
-                }`}>
-                  {interview.status === 'in_progress' ? '进行中' : '已完成'}
-                </span>
-                {interview.status === 'in_progress' && (
-                  <button className="text-sm text-primary-600 hover:text-primary-700 font-medium">查看详情 →</button>
-                )}
-                {interview.status === 'completed' && (
-                  <button className="text-sm text-primary-600 hover:text-primary-700 font-medium">查看报告</button>
-                )}
-              </div>
-            </div>
-          ))}
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* 最近的完成/中断记录 */}
+      <div className="bg-white rounded-xl border border-slate-100 shadow-card overflow-hidden">
+        <div className="px-5 py-4 border-b border-slate-100">
+          <h3 className="font-semibold text-slate-800">📋 最近面试记录</h3>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="w-full">
+            <thead>
+              <tr className="bg-slate-50 border-b border-slate-200">
+                {['岗位', '难度', '模式', '状态', '耗时', '得分', '时间', '操作'].map(h => (
+                  <th key={h} className="text-left px-5 py-3 text-xs font-medium text-slate-500 uppercase whitespace-nowrap">{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-50">
+              {records.map(item => (
+                <tr key={item.id} className="hover:bg-slate-50/50 transition-colors">
+                  <td className="px-5 py-3">
+                    <span className="text-sm font-medium text-slate-700 flex items-center gap-2">
+                      {posIcons[item.positionName] || '💼'} {item.positionName}
+                    </span>
+                  </td>
+                  <td className="px-5 py-3">
+                    <span className="text-sm text-slate-500">{diffLabels[item.difficulty] || item.difficulty}</span>
+                  </td>
+                  <td className="px-5 py-3">
+                    <span className="text-xs px-2 py-0.5 bg-slate-100 text-slate-600 rounded-full">
+                      {item.mode === 'voice' ? '语音' : item.mode === 'video' ? '视频' : '文本'}
+                    </span>
+                  </td>
+                  <td className="px-5 py-3">
+                    <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                      item.status === 'in_progress' ? 'bg-green-50 text-green-700' :
+                      item.status === 'completed' ? 'bg-blue-50 text-blue-700' :
+                      'bg-orange-50 text-orange-700'
+                    }`}>
+                      {item.status === 'in_progress' ? '进行中' : item.status === 'completed' ? '已完成' : '中断'}
+                    </span>
+                  </td>
+                  <td className="px-5 py-3 text-sm text-slate-500">
+                    {getElapsed(item.startedAt, item.completedAt)}
+                  </td>
+                  <td className="px-5 py-3">
+                    {item.score != null ? (
+                      <span className={`text-sm font-bold ${item.score >= 80 ? 'text-green-600' : item.score >= 60 ? 'text-amber-600' : 'text-red-500'}`}>
+                        {item.score} 分
+                      </span>
+                    ) : (
+                      <span className="text-sm text-slate-400">-</span>
+                    )}
+                  </td>
+                  <td className="px-5 py-3 text-xs text-slate-400">
+                    {item.startedAt?.slice(5, 16)?.replace('T', ' ') || '-'}
+                  </td>
+                  <td className="px-5 py-3">
+                    {item.status === 'completed' ? (
+                      <button className="text-sm text-primary-600 hover:text-primary-700 font-medium">查看报告</button>
+                    ) : item.status === 'in_progress' ? (
+                      <button className="text-sm text-primary-600 hover:text-primary-700 font-medium">实时监控</button>
+                    ) : (
+                      <span className="text-sm text-slate-400">-</span>
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       </div>
     </div>

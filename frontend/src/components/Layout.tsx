@@ -6,6 +6,7 @@ const candidateMenuItems = [
   { key: '/', icon: 'dashboard', label: '工作台' },
   { key: '/setup', icon: 'interview', label: '开始面试' },
   { key: '/reports', icon: 'chart', label: '面试报告' },
+  { key: '/leaderboard', icon: 'leaderboard', label: '排行榜' },
   { key: '/profile', icon: 'profile', label: '个人中心' },
 ];
 
@@ -70,6 +71,16 @@ const icons: Record<string, JSX.Element> = {
   chart: (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-5 h-5">
       <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
+    </svg>
+  ),
+  leaderboard: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-5 h-5">
+      <path d="M6 9H4.5a2.5 2.5 0 0 1 0-5C7 4 7 4 7 4" />
+      <path d="M18 9h1.5a2.5 2.5 0 0 0 0-5C17 4 17 4 17 4" />
+      <path d="M4 22h16" />
+      <path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22" />
+      <path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22" />
+      <path d="M18 2H6v7a6 6 0 0 0 12 0V2Z" />
     </svg>
   ),
 };

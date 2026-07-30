@@ -10,6 +10,7 @@ import com.interview.user.mapper.UserMapper;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
 import java.util.Map;
 
 @Service
@@ -59,6 +60,51 @@ public class UserService extends ServiceImpl<UserMapper, User> {
         return this.count(
                 new LambdaQueryWrapper<User>().eq(User::getUsername, username)
         ) > 0;
+    }
+
+    /**
+     * 获取排行榜数据（真实求职者 + 固定虚拟人气用户）
+     */
+    public List<Map<String, Object>> getLeaderboard() {
+        List<Map<String, Object>> list = this.baseMapper.getLeaderboard();
+
+        // 追加固定虚拟用户，仅用于排行榜展示，不存入数据库
+        list.addAll(getBotUsers());
+
+        // 按面试次数降序、平均分降序排列
+        list.sort((a, b) -> {
+            long countA = ((Number) a.get("interview_count")).longValue();
+            long countB = ((Number) b.get("interview_count")).longValue();
+            if (countA != countB) return Long.compare(countB, countA);
+            double scoreA = ((Number) a.get("avg_score")).doubleValue();
+            double scoreB = ((Number) b.get("avg_score")).doubleValue();
+            return Double.compare(scoreB, scoreA);
+        });
+        return list;
+    }
+
+    /**
+     * 虚拟人气用户 —— 固定身份，成绩和次数随机分布但保持不变
+     */
+    private List<Map<String, Object>> getBotUsers() {
+        return List.of(
+            Map.of("username", "张明远",     "interview_count", 27L, "avg_score", 92.3),
+            Map.of("username", "李思涵",     "interview_count", 24L, "avg_score", 89.7),
+            Map.of("username", "王晨曦",     "interview_count", 21L, "avg_score", 86.1),
+            Map.of("username", "赵一鸣",     "interview_count", 19L, "avg_score", 94.8),
+            Map.of("username", "陈雨桐",     "interview_count", 18L, "avg_score", 78.5),
+            Map.of("username", "林小满",     "interview_count", 16L, "avg_score", 91.2),
+            Map.of("username", "周子轩",     "interview_count", 15L, "avg_score", 73.0),
+            Map.of("username", "吴若曦",     "interview_count", 14L, "avg_score", 83.6),
+            Map.of("username", "郑浩然",     "interview_count", 12L, "avg_score", 67.4),
+            Map.of("username", "黄思远",     "interview_count", 11L, "avg_score", 76.9),
+            Map.of("username", "刘雨晴",     "interview_count", 9L,  "avg_score", 88.5),
+            Map.of("username", "许一诺",     "interview_count", 8L,  "avg_score", 61.2),
+            Map.of("username", "沈逸凡",     "interview_count", 7L,  "avg_score", 71.8),
+            Map.of("username", "孙乐怡",     "interview_count", 5L,  "avg_score", 82.3),
+            Map.of("username", "杨子涵",     "interview_count", 3L,  "avg_score", 57.0),
+            Map.of("username", "唐诗语",     "interview_count", 2L,  "avg_score", 65.5)
+        );
     }
 
     /**
