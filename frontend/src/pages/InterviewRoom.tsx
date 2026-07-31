@@ -177,11 +177,11 @@ export default function InterviewRoom() {
   const totalSecs = (config?.questionCount || 8) * 180;
 
   return (
-    <div className="h-full flex flex-col bg-[#111827] text-slate-200 interview-dark">
+    <div className="h-full flex flex-col bg-[#0f1729] text-slate-200 interview-dark">
 
 
       {/* Top Bar */}
-      <div className="flex items-center justify-between px-6 py-3 bg-slate-800/50 border-b border-slate-700 shrink-0">
+      <div className="flex items-center justify-between px-6 py-3 bg-[#0f1729]/95 backdrop-blur-sm border-b border-white/5 shrink-0">
         <div className="flex items-center gap-3">
           <span className="text-white font-medium text-sm">{config?.positionName}</span>
           <span className="px-2 py-0.5 bg-blue-500/20 text-blue-300 rounded-lg text-xs">{answeredCount}/{totalQuestions} 题</span>
@@ -385,7 +385,7 @@ export default function InterviewRoom() {
 
       {/* 输入区 */}
       {!waitingForNext && (
-        <div className="px-6 py-4 bg-[#0b1018] border-t-2 border-indigo-500/40 shrink-0">
+        <div className="px-6 py-4 bg-[#060b14] border-t-2 border-indigo-500/40 shrink-0">
           {/* 快捷短语 */}
           <div className="flex gap-2 mb-3 flex-wrap">
             {QUICK_REPLIES.map(phrase => (

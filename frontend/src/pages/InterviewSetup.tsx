@@ -12,24 +12,24 @@ interface Position {
   id: string; name: string; category: string; description: string; tags: string[]; hot: boolean;
 }
 
-const difficultyOptions: { value: Difficulty; label: string; desc: string }[] = [
-  { value: 'junior', label: '初级', desc: '基础概念 + 简单场景' },
-  { value: 'middle', label: '中级', desc: '原理理解 + 项目实战' },
-  { value: 'senior', label: '高级', desc: '架构设计 + 深度追问' },
-  { value: 'expert', label: '专家级', desc: '系统思维 + 创新方案' },
+const difficultyOptions: { value: Difficulty; label: string; desc: string; color: string }[] = [
+  { value: 'junior', label: '初级', desc: '基础概念 + 简单场景', color: 'border-emerald-400 bg-emerald-50 text-emerald-700' },
+  { value: 'middle', label: '中级', desc: '原理理解 + 项目实战', color: 'border-accent-400 bg-accent-50 text-accent-700' },
+  { value: 'senior', label: '高级', desc: '架构设计 + 深度追问', color: 'border-brand-400 bg-brand-50 text-brand-700' },
+  { value: 'expert', label: '专家级', desc: '系统思维 + 创新方案', color: 'border-rose-400 bg-rose-50 text-rose-700' },
 ];
 
 const modeOptions: { value: InterviewMode; label: string; icon: JSX.Element; desc: string }[] = [
-  { value: 'text', label: '文字面试', icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-5 h-5"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>, desc: '通过文本对话完成面试' },
-  { value: 'voice', label: '语音面试', icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-5 h-5"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/></svg>, desc: '语音实时交流，转写为文字' },
-  { value: 'video', label: '视频面试', icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-5 h-5"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>, desc: '视频面对面（三期开放）' },
+  { value: 'text', label: '文字面试', icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" className="w-6 h-6"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>, desc: '通过文本对话完成面试' },
+  { value: 'voice', label: '语音面试', icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" className="w-6 h-6"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/></svg>, desc: '语音实时交流，转写为文字' },
+  { value: 'video', label: '视频面试', icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" className="w-6 h-6"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>, desc: '视频面对面（三期开放）' },
 ];
 
-const typeOptions: { value: InterviewType; label: string; desc: string }[] = [
-  { value: 'technical', label: '技术面', desc: '专业知识 + 技术深度' },
-  { value: 'hr', label: 'HR面', desc: '综合素质 + 软技能' },
-  { value: 'stress', label: '压力面', desc: '高压场景 + 临场应变' },
-  { value: 'boss', label: 'Boss面', desc: '战略思维 + 领导力' },
+const typeOptions: { value: InterviewType; label: string; desc: string; icon: string }[] = [
+  { value: 'technical', label: '技术面', desc: '专业知识 + 技术深度', icon: '💻' },
+  { value: 'hr', label: 'HR面', desc: '综合素质 + 软技能', icon: '🤝' },
+  { value: 'stress', label: '压力面', desc: '高压场景 + 临场应变', icon: '⚡' },
+  { value: 'boss', label: 'Boss面', desc: '战略思维 + 领导力', icon: '🎯' },
 ];
 
 const stepTitles = ['选择岗位', '参数配置', '确认开始'];
@@ -57,7 +57,6 @@ export default function InterviewSetup() {
       const data = res.data.data as RawPosition[];
       setPositions(data.map(p => ({ ...p, tags: p.tags ? JSON.parse(p.tags) : [] })));
     } catch {
-      // 后端不可用时使用 Mock 数据
       const parsed = MOCK_POSITIONS.map(p => ({ ...p, tags: JSON.parse(p.tags) as string[] }));
       setPositions(parsed);
     }
@@ -87,7 +86,6 @@ export default function InterviewSetup() {
       setStatus('in_progress');
       navigate(`/interview/${data.interviewId}`);
     } catch {
-      // 后端不可用：使用 Mock interviewId 直接进入面试
       const mockId = `mock-${Date.now()}`;
       setConfig(config);
       setStatus('in_progress');
@@ -97,175 +95,320 @@ export default function InterviewSetup() {
   };
 
   return (
-    <div className="page-container">
-      <h1 className="text-xl font-bold text-slate-800 mb-1">配置你的模拟面试</h1>
-      <p className="text-slate-500 text-sm mb-6">选择岗位、难度和交互模式，AI 面试官将为你打造专属面试体验</p>
-
-      {/* Steps */}
-      <div className="flex gap-4 mb-8">
-        {stepTitles.map((title, i) => (
-          <div key={title} className="flex items-center gap-3 flex-1">
-            <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-sm font-bold shrink-0 transition-colors
-              ${i <= currentStep ? 'bg-primary-700 text-white' : 'bg-slate-200 text-slate-400'}`}>
-              {i + 1}
-            </div>
-            <div>
-              <p className={`text-sm font-medium ${i <= currentStep ? 'text-slate-800' : 'text-slate-400'}`}>{title}</p>
-              <p className="text-xs text-slate-400">{['目标职位','难度 & 模式','确认并启动'][i]}</p>
-            </div>
-            {i < 2 && <div className={`flex-1 h-0.5 ${i < currentStep ? 'bg-primary-700' : 'bg-slate-200'}`} />}
-          </div>
-        ))}
+    <div className="page-container animate-fade-in">
+      <div className="mb-8">
+        <h1 className="text-2xl font-extrabold text-slate-800 tracking-tight">配置你的模拟面试</h1>
+        <p className="text-slate-500 text-sm mt-1.5">选择岗位、难度和交互模式，AI 面试官将为你打造专属面试体验</p>
       </div>
 
+      {/* ===== 步骤条 ===== */}
+      <div className="flex gap-0 mb-10">
+        {stepTitles.map((title, i) => {
+          const isActive = i === currentStep;
+          const isDone = i < currentStep;
+          const isPending = i > currentStep;
+          return (
+            <div key={title} className="flex items-center flex-1 last:flex-none">
+              <div className="flex items-center gap-3">
+                {/* Step circle */}
+                <div className={`w-11 h-11 rounded-xl flex items-center justify-center text-sm font-bold shrink-0
+                  transition-all duration-300 ease-spring
+                  ${isDone
+                    ? 'bg-emerald-500 text-white shadow-md shadow-emerald-500/20'
+                    : isActive
+                      ? 'bg-accent-600 text-white shadow-lg shadow-accent-500/25 ring-4 ring-accent-100'
+                      : 'bg-slate-100 text-slate-400'
+                  }`}>
+                  {isDone ? (
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" className="w-5 h-5"><polyline points="20 6 9 17 4 12"/></svg>
+                  ) : i + 1}
+                </div>
+                <div>
+                  <p className={`text-sm font-semibold transition-colors duration-300
+                    ${isPending ? 'text-slate-400' : 'text-slate-800'}`}>{title}</p>
+                  <p className="text-xs text-slate-400 mt-0.5">
+                    {['目标职位', '难度 & 模式', '确认并启动'][i]}
+                  </p>
+                </div>
+              </div>
+              {/* Connector line */}
+              {i < 2 && (
+                <div className="flex-1 mx-4">
+                  <div className={`h-1 rounded-full transition-all duration-500 ${
+                    isDone ? 'bg-emerald-500' : isActive ? 'bg-gradient-to-r from-accent-400 to-slate-200' : 'bg-slate-200'
+                  }`} />
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+
+      {/* ===== Error ===== */}
       {error && (
-        <div className="bg-red-50 border border-red-200 text-red-600 text-sm px-4 py-3 rounded-xl mb-4">{error}</div>
+        <div className="bg-rose-50 border border-rose-200 text-rose-600 text-sm px-4 py-3 rounded-xl mb-6
+                        flex items-center gap-2 animate-fade-in">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4 shrink-0"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+          {error}
+        </div>
       )}
 
-      {/* Step 0: Position Selection */}
+      {/* ===== Step 0: 选择岗位 ===== */}
       {currentStep === 0 && (
         <>
           {positionsLoading ? (
-            <div className="text-center py-16 text-slate-400">
-              <svg className="animate-spin w-8 h-8 mx-auto mb-3" viewBox="0 0 24 24" fill="none">
-                <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" className="opacity-25" />
-                <path d="M4 12a8 8 0 018-8" stroke="currentColor" strokeWidth="4" className="opacity-75" />
-              </svg>
-              加载岗位列表...
+            <div className="flex justify-center items-center py-24">
+              <div className="flex flex-col items-center gap-4 text-slate-400">
+                <div className="w-10 h-10 border-[3px] border-accent-200 border-t-accent-600 rounded-full animate-spin" />
+                <span className="text-sm font-medium">加载岗位列表...</span>
+              </div>
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {positions.map((pos) => (
-                <button
-                  key={pos.id}
-                  onClick={() => { setSelectedPosition(pos.id); setError(''); }}
-                  className={`text-left p-5 rounded-xl border-2 transition-all
-                    ${selectedPosition === pos.id ? 'border-primary-700 bg-primary-50/50 shadow-sm' : 'border-slate-200 bg-white hover:border-slate-300'}`}
-                >
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="font-semibold text-slate-800">{pos.name}</span>
-                    <span className="px-2 py-0.5 bg-primary-50 text-primary-700 rounded-lg text-xs font-medium">{pos.category}</span>
-                  </div>
-                  <p className="text-sm text-slate-500 mb-3">{pos.description}</p>
-                  <div className="flex flex-wrap gap-1.5">
-                    {Array.isArray(pos.tags) && pos.tags.map((tag: string) => (
-                      <span key={tag} className="px-2 py-0.5 bg-slate-100 text-slate-500 rounded text-xs">{tag}</span>
-                    ))}
-                  </div>
-                </button>
-              ))}
+              {positions.map((pos) => {
+                const isSelected = selectedPosition === pos.id;
+                return (
+                  <button
+                    key={pos.id}
+                    onClick={() => { setSelectedPosition(pos.id); setError(''); }}
+                    className={`text-left p-5 rounded-2xl border-2 transition-all duration-200 ease-spring
+                      ${isSelected
+                        ? 'border-accent-500 bg-accent-50/50 shadow-md shadow-accent-500/5 ring-2 ring-accent-500/10'
+                        : 'border-slate-200 bg-white hover:border-slate-300 hover:shadow-sm'
+                      }
+                      ${isSelected ? 'scale-[1.01]' : 'hover:scale-[1.005]'}
+                      active:scale-[0.985]`}
+                  >
+                    <div className="flex items-center justify-between mb-2.5">
+                      <span className="font-semibold text-slate-800">{pos.name}</span>
+                      <span className={`px-2.5 py-0.5 rounded-lg text-xs font-medium border transition-colors
+                        ${isSelected ? 'bg-accent-100 text-accent-700 border-accent-200' : 'bg-slate-50 text-slate-500 border-slate-200'}`}>
+                        {pos.category}
+                      </span>
+                    </div>
+                    <p className="text-sm text-slate-500 mb-3 leading-relaxed">{pos.description}</p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {Array.isArray(pos.tags) && pos.tags.map((tag: string) => (
+                        <span key={tag} className="px-2 py-0.5 bg-slate-50 text-slate-500 rounded-md text-xs border border-slate-100">
+                          {tag}
+                        </span>
+                      ))}
+                    </div>
+                  </button>
+                );
+              })}
             </div>
           )}
-          <div className="mt-6 text-right">
+          <div className="mt-8 flex justify-end">
             <button disabled={!selectedPosition}
               onClick={() => { setCurrentStep(1); setError(''); }}
-              className="bg-primary-700 text-white px-6 py-2.5 rounded-xl font-medium hover:bg-primary-800 transition-colors disabled:opacity-40 disabled:cursor-not-allowed">
+              className="btn-brand px-8 py-3 text-[15px] disabled:opacity-40 disabled:cursor-not-allowed
+                         disabled:hover:shadow-button disabled:active:scale-100">
               下一步
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4 ml-1"><polyline points="9 18 15 12 9 6"/></svg>
             </button>
           </div>
         </>
       )}
 
-      {/* Step 1: Config */}
+      {/* ===== Step 1: 参数配置 ===== */}
       {currentStep === 1 && (
         <>
+          {/* 已选岗位提示 */}
           {selectedPos && (
-            <div className="bg-slate-50 rounded-xl p-4 mb-6 flex items-center gap-4">
+            <div className="card bg-accent-50/50 border-accent-200 p-4 mb-6 flex items-center gap-4 animate-fade-in">
               <span className="text-sm text-slate-500">已选岗位：</span>
-              <span className="font-medium text-slate-800">{selectedPos.name}</span>
-              <span className="px-2 py-0.5 bg-primary-50 text-primary-700 rounded-lg text-xs">{selectedPos.category}</span>
+              <span className="font-semibold text-slate-800">{selectedPos.name}</span>
+              <span className="px-2.5 py-0.5 bg-accent-100 text-accent-700 rounded-lg text-xs font-medium border border-accent-200">{selectedPos.category}</span>
+              <button onClick={() => setCurrentStep(0)} className="ml-auto text-xs text-accent-600 hover:text-accent-700 font-medium transition-colors">
+                更换
+              </button>
             </div>
           )}
 
-          {/* Mode */}
-          <div className="bg-white rounded-xl border border-slate-200 p-5 mb-4">
-            <h3 className="font-semibold text-slate-800 mb-4">面试模式</h3>
+          {/* 面试模式 */}
+          <div className="card p-6 mb-5">
+            <h3 className="font-semibold text-slate-800 mb-5 flex items-center gap-2">
+              <span className="w-1 h-4 rounded-full bg-accent-500" />
+              面试模式
+            </h3>
             <div className="grid grid-cols-3 gap-3">
-              {modeOptions.map((opt) => (
-                <button key={opt.value} onClick={() => setMode(opt.value)}
-                  disabled={opt.value === 'video'}
-                  className={`flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all text-center
-                    ${mode === opt.value ? 'border-primary-700 bg-primary-50/50' : 'border-slate-200 hover:border-slate-300'}
-                    ${opt.value === 'video' ? 'opacity-50 cursor-not-allowed' : ''}`}>
-                  <span className={mode === opt.value ? 'text-primary-700' : 'text-slate-400'}>{opt.icon}</span>
-                  <span className={`text-sm font-medium ${mode === opt.value ? 'text-slate-800' : 'text-slate-500'}`}>{opt.label}</span>
-                  <span className="text-xs text-slate-400">{opt.desc}</span>
-                  {opt.value === 'video' && <span className="px-2 py-0.5 bg-orange-100 text-orange-500 rounded text-xs">三期开放</span>}
-                </button>
-              ))}
+              {modeOptions.map((opt) => {
+                const isActive = mode === opt.value;
+                const isDisabled = opt.value === 'video';
+                return (
+                  <button key={opt.value} onClick={() => !isDisabled && setMode(opt.value)}
+                    disabled={isDisabled}
+                    className={`flex flex-col items-center gap-3 p-5 rounded-2xl border-2 transition-all duration-200 ease-spring text-center
+                      ${isActive
+                        ? 'border-accent-500 bg-accent-50/50 shadow-md shadow-accent-500/5 ring-2 ring-accent-500/10 scale-[1.02]'
+                        : 'border-slate-200 hover:border-slate-300 hover:shadow-sm hover:scale-[1.005]'
+                      }
+                      ${isDisabled ? 'opacity-40 cursor-not-allowed hover:scale-100' : 'cursor-pointer'}
+                      active:scale-[0.97]`}>
+                    <span className={`transition-colors duration-200 ${isActive ? 'text-accent-600' : 'text-slate-400'}`}>
+                      {opt.icon}
+                    </span>
+                    <span className={`text-sm font-semibold ${isActive ? 'text-slate-800' : 'text-slate-500'}`}>
+                      {opt.label}
+                    </span>
+                    <span className="text-xs text-slate-400 leading-relaxed">{opt.desc}</span>
+                    {isDisabled && <span className="px-2.5 py-0.5 bg-orange-100 text-orange-500 rounded-full text-xs font-medium">三期开放</span>}
+                  </button>
+                );
+              })}
             </div>
           </div>
 
-          {/* Type */}
-          <div className="bg-white rounded-xl border border-slate-200 p-5 mb-4">
-            <h3 className="font-semibold text-slate-800 mb-4">面试类型</h3>
+          {/* 面试类型 */}
+          <div className="card p-6 mb-5">
+            <h3 className="font-semibold text-slate-800 mb-5 flex items-center gap-2">
+              <span className="w-1 h-4 rounded-full bg-brand-500" />
+              面试类型
+            </h3>
             <div className="flex flex-wrap gap-3">
-              {typeOptions.map((opt) => (
-                <button key={opt.value} onClick={() => setType(opt.value)}
-                  className={`px-5 py-2.5 rounded-xl border-2 transition-all text-sm
-                    ${type === opt.value ? 'border-primary-700 bg-primary-50 text-primary-700 font-medium' : 'border-slate-200 text-slate-600 hover:border-slate-300'}`}>
-                  {opt.label}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Difficulty & Count */}
-          <div className="grid grid-cols-2 gap-4">
-            <div className="bg-white rounded-xl border border-slate-200 p-5">
-              <h3 className="font-semibold text-slate-800 mb-4">难度等级</h3>
-              <div className="space-y-2">
-                {difficultyOptions.map((opt) => (
-                  <label key={opt.value} onClick={() => setDifficulty(opt.value)}
-                    className={`flex items-center gap-3 p-3 rounded-xl border-2 cursor-pointer transition-all
-                      ${difficulty === opt.value ? 'border-primary-700 bg-primary-50/50' : 'border-slate-200 hover:border-slate-300'}`}>
-                    <div className={`w-4 h-4 rounded-full border-2 flex shrink-0 ${difficulty === opt.value ? 'border-primary-700 bg-primary-700' : 'border-slate-300'}`}>
-                      {difficulty === opt.value && <svg viewBox="0 0 24 24" fill="white" className="w-3 h-3 m-auto"><polyline points="20 6 9 17 4 12"/></svg>}
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium text-slate-700">{opt.label}</p>
+              {typeOptions.map((opt) => {
+                const isActive = type === opt.value;
+                return (
+                  <button key={opt.value} onClick={() => setType(opt.value)}
+                    className={`flex items-center gap-2.5 px-5 py-3 rounded-xl border-2 transition-all duration-200 ease-spring text-sm
+                      ${isActive
+                        ? 'border-accent-500 bg-accent-50 text-accent-700 font-semibold shadow-sm scale-[1.02]'
+                        : 'border-slate-200 text-slate-600 hover:border-slate-300 hover:bg-slate-50'
+                      }
+                      active:scale-[0.97] cursor-pointer`}>
+                    <span className="text-lg">{opt.icon}</span>
+                    <div className="text-left">
+                      <p className="font-medium">{opt.label}</p>
                       <p className="text-xs text-slate-400">{opt.desc}</p>
                     </div>
-                  </label>
-                ))}
-              </div>
-            </div>
-            <div className="bg-white rounded-xl border border-slate-200 p-5">
-              <h3 className="font-semibold text-slate-800 mb-4">题目数量</h3>
-              <input type="number" min={3} max={20} value={questionCount}
-                onChange={(e) => setQuestionCount(Math.max(3, Math.min(20, Number(e.target.value))))}
-                className="w-full border border-slate-300 rounded-xl px-4 py-3 text-sm outline-none focus:border-primary-700 focus:ring-2 focus:ring-primary-500/20" />
-              <p className="text-xs text-slate-400 mt-2">建议 6-10 题，预计 {questionCount * 3} 分钟</p>
+                  </button>
+                );
+              })}
             </div>
           </div>
 
-          <div className="mt-6 flex justify-between">
+          {/* 难度 + 题目数量 */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+            {/* 难度等级 */}
+            <div className="card p-6">
+              <h3 className="font-semibold text-slate-800 mb-5 flex items-center gap-2">
+                <span className="w-1 h-4 rounded-full bg-amber-500" />
+                难度等级
+              </h3>
+              <div className="space-y-2">
+                {difficultyOptions.map((opt) => {
+                  const isActive = difficulty === opt.value;
+                  return (
+                    <button key={opt.value} onClick={() => setDifficulty(opt.value)}
+                      className={`w-full flex items-center gap-4 p-3.5 rounded-xl border-2 cursor-pointer
+                        transition-all duration-200 ease-spring text-left
+                        ${isActive
+                          ? 'border-accent-500 bg-accent-50/50 shadow-sm ring-2 ring-accent-500/10'
+                          : 'border-slate-200 hover:border-slate-300 hover:bg-slate-50'
+                        }
+                        active:scale-[0.98]`}>
+                      <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 transition-all
+                        ${isActive ? 'border-accent-600 bg-accent-600' : 'border-slate-300'}`}>
+                        {isActive && (
+                          <svg viewBox="0 0 24 24" fill="white" className="w-3 h-3"><polyline points="20 6 9 17 4 12" stroke="white" strokeWidth="3" fill="none"/></svg>
+                        )}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className={`text-sm font-semibold transition-colors ${isActive ? 'text-slate-800' : 'text-slate-600'}`}>{opt.label}</p>
+                        <p className="text-xs text-slate-400 mt-0.5">{opt.desc}</p>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* 题目数量 */}
+            <div className="card p-6">
+              <h3 className="font-semibold text-slate-800 mb-5 flex items-center gap-2">
+                <span className="w-1 h-4 rounded-full bg-emerald-500" />
+                题目数量
+              </h3>
+              <div className="space-y-4">
+                {/* 滑块 */}
+                <div className="relative pt-2">
+                  <input
+                    type="range"
+                    min={3}
+                    max={20}
+                    value={questionCount}
+                    onChange={(e) => setQuestionCount(Number(e.target.value))}
+                    className="w-full h-2 bg-slate-200 rounded-full appearance-none cursor-pointer
+                               accent-accent-600
+                               [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-6
+                               [&::-webkit-slider-thumb]:h-6 [&::-webkit-slider-thumb]:bg-accent-600
+                               [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:shadow-md
+                               [&::-webkit-slider-thumb]:cursor-pointer [&::-webkit-slider-thumb]:transition-transform
+                               [&::-webkit-slider-thumb]:hover:scale-110
+                               [&::-webkit-slider-thumb]:border-[3px] [&::-webkit-slider-thumb]:border-white"
+                  />
+                  <div className="flex justify-between mt-2 text-xs text-slate-400">
+                    <span>3 题</span>
+                    <span>20 题</span>
+                  </div>
+                </div>
+
+                {/* 快捷选择 */}
+                <div className="flex gap-2 justify-center">
+                  {[5, 8, 10, 15].map(n => (
+                    <button key={n} onClick={() => setQuestionCount(n)}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200
+                        ${questionCount === n
+                          ? 'bg-accent-600 text-white shadow-sm'
+                          : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
+                        }
+                        active:scale-90 cursor-pointer`}>
+                      {n} 题
+                    </button>
+                  ))}
+                </div>
+
+                {/* 实时预览 */}
+                <div className="bg-slate-50 rounded-xl p-4 text-center">
+                  <p className="text-3xl font-extrabold text-accent-600 tabular-nums">{questionCount}</p>
+                  <p className="text-xs text-slate-500 mt-1">道题 · 预计 {questionCount * 3} 分钟</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* 导航按钮 */}
+          <div className="mt-8 flex justify-between">
             <button onClick={() => setCurrentStep(0)}
-              className="px-6 py-2.5 border border-slate-300 rounded-xl text-slate-600 hover:bg-slate-50 transition-colors">
+              className="px-6 py-3 border-2 border-slate-200 rounded-xl text-slate-600 font-medium
+                         hover:bg-slate-50 hover:border-slate-300 active:scale-95 transition-all duration-200">
               上一步
             </button>
             <button onClick={() => { setCurrentStep(2); setError(''); }}
-              className="bg-primary-700 text-white px-6 py-2.5 rounded-xl font-medium hover:bg-primary-800 transition-colors">
+              className="btn-brand px-8 py-3 text-[15px]">
               确认配置
             </button>
           </div>
         </>
       )}
 
-      {/* Step 2: Confirm */}
+      {/* ===== Step 2: 确认 ===== */}
       {currentStep === 2 && (
-        <div className="bg-white rounded-xl border border-slate-200 p-8">
-          <div className="text-center">
-            <div className="w-20 h-20 mx-auto mb-6 rounded-2xl bg-gradient-to-br from-primary-600 to-indigo-500 flex items-center justify-center">
-              <svg viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" className="w-10 h-10">
+        <div className="card p-8 md:p-10 animate-scale-in">
+          <div className="text-center mb-10">
+            <div className="w-20 h-20 mx-auto mb-6 rounded-2xl bg-gradient-to-br from-accent-500 to-brand-600
+                            flex items-center justify-center shadow-lg shadow-brand-500/25 animate-float">
+              <svg viewBox="0 0 24 24" fill="white" className="w-10 h-10">
                 <polygon points="13,2 3,14 12,14 11,22 21,10 12,10 13,2" />
               </svg>
             </div>
-            <h2 className="text-2xl font-bold text-slate-800 mb-2">一切就绪，准备开始！</h2>
-            <p className="text-slate-500 text-sm mb-8">确认以下配置后，AI 面试官将进入房间</p>
+            <h2 className="text-2xl font-extrabold text-slate-800 tracking-tight">一切就绪，准备开始！</h2>
+            <p className="text-slate-500 text-sm mt-2">确认以下配置后，AI 面试官将进入房间</p>
           </div>
 
-          <div className="grid grid-cols-2 gap-3 max-w-sm mx-auto mb-8">
+          {/* 配置摘要网格 */}
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 max-w-lg mx-auto mb-10">
             {[
               ['目标岗位', selectedPos?.name || '-'],
               ['面试模式', modeOptions.find(m => m.value === mode)?.label],
@@ -274,24 +417,37 @@ export default function InterviewSetup() {
               ['面试类型', typeOptions.find(t => t.value === type)?.label],
               ['预计时长', `${questionCount * 3} 分钟`],
             ].map(([label, val]) => (
-              <div key={label as string} className="bg-slate-50 rounded-lg px-4 py-3">
-                <p className="text-xs text-slate-400">{label}</p>
-                <p className="text-sm font-medium text-slate-700">{val}</p>
+              <div key={label as string} className="bg-slate-50 rounded-xl px-4 py-3.5 text-center
+                                                     border border-slate-100 hover:border-slate-200 transition-colors">
+                <p className="text-[11px] text-slate-400 font-medium uppercase tracking-wider">{label}</p>
+                <p className="text-sm font-semibold text-slate-700 mt-1.5">{val}</p>
               </div>
             ))}
           </div>
 
+          {/* 操作按钮 */}
           <div className="flex justify-center gap-4">
             <button onClick={() => setCurrentStep(1)}
-              className="px-6 py-2.5 border border-slate-300 rounded-xl text-slate-600 hover:bg-slate-50 transition-colors">
+              className="px-7 py-3 border-2 border-slate-200 rounded-xl text-slate-600 font-medium
+                         hover:bg-slate-50 hover:border-slate-300 active:scale-95 transition-all duration-200">
               返回修改
             </button>
             <button onClick={handleStart} disabled={loading}
-              className="bg-primary-700 text-white px-8 py-2.5 rounded-xl font-medium hover:bg-primary-800 transition-colors flex items-center gap-2 disabled:opacity-60 shadow-lg shadow-primary-200">
+              className="btn-brand px-10 py-3 text-[15px] disabled:opacity-60 shadow-lg shadow-brand-500/20
+                         disabled:hover:shadow-button disabled:active:scale-100 flex items-center gap-2.5">
               {loading ? (
-                <><svg className="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" className="opacity-25"/><path d="M4 12a8 8 0 018-8" stroke="currentColor" strokeWidth="4" className="opacity-75"/></svg>创建中...</>
+                <>
+                  <svg className="animate-spin w-5 h-5" viewBox="0 0 24 24" fill="none">
+                    <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" className="opacity-25"/>
+                    <path d="M4 12a8 8 0 018-8" stroke="currentColor" strokeWidth="4" className="opacity-75"/>
+                  </svg>
+                  创建中...
+                </>
               ) : (
-                <><svg viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5"><polygon points="5,3 19,12 5,21"/></svg>开始面试</>
+                <>
+                  <svg viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5"><polygon points="5,3 19,12 5,21"/></svg>
+                  开始面试
+                </>
               )}
             </button>
           </div>

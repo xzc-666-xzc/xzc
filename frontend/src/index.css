@@ -20,29 +20,73 @@
   body {
     background-color: #f8fafc;
   }
+
+  /* 全局 focus 环 — WCAG AA 可见焦点指示 */
+  :focus-visible {
+    outline: 2px solid #6366f1;
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
 }
 
 @layer components {
   .page-container {
-    @apply p-6 max-w-[1200px] mx-auto;
+    @apply p-6 md:p-8 max-w-[1280px] mx-auto;
   }
 
-  /* 得分圆环 */
+  /* 得分圆环过渡 */
   .score-ring {
-    transition: stroke-dashoffset 1s ease-in-out;
+    transition: stroke-dashoffset 1s cubic-bezier(0.16, 1, 0.3, 1);
   }
 
-  /* 卡片微交互 */
+  /* ====== 统一卡片 ====== */
+  .card {
+    @apply bg-white rounded-2xl border border-slate-100 shadow-card;
+  }
+
+  /* 卡片悬停微交互 — 上浮 + 阴影增强 */
   .card-hover {
-    @apply transition-all duration-300;
+    @apply transition-all duration-300 ease-spring;
   }
   .card-hover:hover {
     @apply -translate-y-1 shadow-card-hover;
   }
+  .card-hover:active {
+    @apply translate-y-0 shadow-card;
+  }
 
-  /* 按钮脉冲效果 */
+  /* 卡片点击态（用于可点击行） */
+  .card-clickable {
+    @apply transition-all duration-200 ease-spring cursor-pointer;
+  }
+  .card-clickable:hover {
+    @apply border-slate-200 shadow-card-hover;
+  }
+  .card-clickable:active {
+    @apply scale-[0.985] border-slate-300;
+  }
+
+  /* ====== 渐变品牌按钮 ====== */
+  .btn-brand {
+    @apply relative overflow-hidden bg-gradient-to-r from-accent-600 to-brand-600
+           text-white font-semibold rounded-xl
+           transition-all duration-200 ease-spring
+           shadow-button hover:shadow-button-hover
+           active:scale-[0.97];
+    background-size: 100% 100%;
+  }
+  .btn-brand::after {
+    content: '';
+    @apply absolute inset-0 opacity-0 transition-opacity duration-300;
+    background: linear-gradient(135deg, rgba(255,255,255,0.2) 0%, transparent 50%);
+  }
+  .btn-brand:hover::after {
+    @apply opacity-100;
+  }
+
+  /* 普通按钮微交互 */
   .btn-glow {
-    @apply transition-all duration-200;
+    @apply transition-all duration-200 ease-spring;
   }
   .btn-glow:hover {
     @apply shadow-glow scale-[1.02];
@@ -50,9 +94,53 @@
   .btn-glow:active {
     @apply scale-[0.98];
   }
+
+  /* ====== 输入框统一样式 ====== */
+  .input-focus {
+    @apply transition-all duration-200;
+  }
+  .input-focus:focus {
+    @apply border-accent-500 ring-2 ring-accent-500/20 outline-none;
+  }
+
+  /* ====== 标签/Tag 统一样式 ====== */
+  .tag {
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border;
+  }
+  .tag-default {
+    @apply tag bg-slate-50 text-slate-600 border-slate-200;
+  }
+  .tag-primary {
+    @apply tag bg-accent-50 text-accent-700 border-accent-200;
+  }
+  .tag-success {
+    @apply tag bg-green-50 text-green-700 border-green-200;
+  }
+  .tag-warning {
+    @apply tag bg-amber-50 text-amber-700 border-amber-200;
+  }
+  .tag-danger {
+    @apply tag bg-red-50 text-red-700 border-red-200;
+  }
+  .tag-purple {
+    @apply tag bg-brand-50 text-brand-700 border-brand-200;
+  }
+
+  /* ====== 进度条 ====== */
+  .progress-bar {
+    @apply h-2 bg-slate-100 rounded-full overflow-hidden;
+  }
+  .progress-bar-fill {
+    @apply h-full rounded-full bg-gradient-to-r from-accent-500 to-brand-500 transition-all duration-700 ease-spring;
+  }
+
+  /* ====== 骨架屏 ====== */
+  .skeleton {
+    @apply animate-shimmer bg-gradient-to-r from-slate-200 via-slate-100 to-slate-200 bg-[length:200%_100%] rounded-lg;
+  }
 }
 
-/* 滚动条美化 */
+/* ====== 滚动条美化 ====== */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
@@ -61,25 +149,34 @@
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: #c1c1c1;
+  background: #cbd5e1;
   border-radius: 3px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #a0a0a0;
+  background: #94a3b8;
 }
 
 /* 暗色主题滚动条 */
 .interview-dark ::-webkit-scrollbar-thumb {
-  background: rgba(255,255,255,0.15);
+  background: rgba(255,255,255,0.12);
 }
 .interview-dark ::-webkit-scrollbar-thumb:hover {
-  background: rgba(255,255,255,0.25);
+  background: rgba(255,255,255,0.22);
 }
 
-/* 时间线样式 */
+/* ====== 时间线组件 ====== */
 .timeline-line {
   @apply absolute left-[19px] top-10 bottom-0 w-px bg-slate-200;
 }
 .timeline-dot {
-  @apply absolute left-[12px] top-6 w-4 h-4 rounded-full border-2 border-primary-500 bg-white;
+  @apply absolute left-[12px] top-6 w-4 h-4 rounded-full border-2 border-accent-500 bg-white ring-4 ring-accent-50;
+}
+
+/* ====== 无障碍：减少动画偏好 ====== */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }
