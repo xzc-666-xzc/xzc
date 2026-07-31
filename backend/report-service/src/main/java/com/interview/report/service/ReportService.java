@@ -36,6 +36,7 @@ public class ReportService extends ServiceImpl<InterviewMapper, Interview> {
     /**
      * 获取完整的面试报告
      */
+    @Transactional(readOnly = true)
     public Map<String, Object> getReport(Long interviewId, Long userId) {
         Interview interview = this.getById(interviewId);
         if (interview == null || !interview.getUserId().equals(userId)) {
@@ -154,14 +155,26 @@ public class ReportService extends ServiceImpl<InterviewMapper, Interview> {
     }
 
     /**
-     * 获取逐题评测详情
+     * 获取逐题评测详情（带权限校验）
      */
-    public Map<String, Object> getEvaluateDetail(Long answerId) {
+    public Map<String, Object> getEvaluateDetail(Long answerId, Long userId) {
         Evaluation eval = evaluationMapper.selectOne(
                 new LambdaQueryWrapper<Evaluation>().eq(Evaluation::getAnswerId, answerId)
         );
         if (eval == null) {
             throw new BusinessException(ResultCode.NOT_FOUND, "评测不存在");
+        }
+
+        // 权限校验：通过 Answer → Question → Interview → userId 追溯
+        Answer answer = answerMapper.selectById(eval.getAnswerId());
+        if (answer != null) {
+            Question question = questionMapper.selectById(answer.getQuestionId());
+            if (question != null) {
+                Interview interview = this.getById(question.getInterviewId());
+                if (interview != null && !interview.getUserId().equals(userId)) {
+                    throw new BusinessException(ResultCode.FORBIDDEN, "无权查看该评测");
+                }
+            }
         }
 
         Map<String, Object> detail = new HashMap<>();
@@ -179,7 +192,7 @@ public class ReportService extends ServiceImpl<InterviewMapper, Interview> {
     }
 
     /**
-     * 获取错题本
+     * 获取错题本 — 批量查询避免 N+1 问题
      */
     public PageResult<Map<String, Object>> getWrongBook(Long userId, int page, int pageSize, String tags) {
         IPage<WrongQuestion> pageResult = wrongQuestionMapper.selectPage(
@@ -189,16 +202,37 @@ public class ReportService extends ServiceImpl<InterviewMapper, Interview> {
                         .orderByDesc(WrongQuestion::getCreatedAt)
         );
 
+        List<WrongQuestion> wqList = pageResult.getRecords();
+        if (wqList.isEmpty()) {
+            return PageResult.of(List.of(), pageResult.getTotal(), pageResult.getCurrent(), pageResult.getSize());
+        }
+
+        // 批量查询 Questions / Answers / Evaluations
+        List<Long> questionIds = wqList.stream().map(WrongQuestion::getQuestionId).distinct().toList();
+        List<Question> questions = questionMapper.selectBatchIds(questionIds);
+        Map<Long, Question> questionMap = questions.stream()
+                .collect(Collectors.toMap(Question::getId, q -> q, (a, b) -> a));
+
+        List<Answer> answers = answerMapper.selectList(
+                new LambdaQueryWrapper<Answer>().in(Answer::getQuestionId, questionIds));
+        Map<Long, Answer> answerMap = answers.stream()
+                .collect(Collectors.toMap(Answer::getQuestionId, a -> a, (a, b) -> a));
+
+        List<Long> answerIds = answers.stream().map(Answer::getId).toList();
+        Map<Long, Evaluation> evalMap = Map.of();
+        if (!answerIds.isEmpty()) {
+            List<Evaluation> evals = evaluationMapper.selectList(
+                    new LambdaQueryWrapper<Evaluation>().in(Evaluation::getAnswerId, answerIds));
+            evalMap = evals.stream()
+                    .collect(Collectors.toMap(Evaluation::getAnswerId, e -> e, (a, b) -> a));
+        }
+
+        // 组装结果
         List<Map<String, Object>> records = new ArrayList<>();
-        for (WrongQuestion wq : pageResult.getRecords()) {
-            Question question = questionMapper.selectById(wq.getQuestionId());
-            Answer answer = answerMapper.selectOne(
-                    new LambdaQueryWrapper<Answer>().eq(Answer::getQuestionId, wq.getQuestionId())
-            );
-            Evaluation eval = evaluationMapper.selectOne(
-                    new LambdaQueryWrapper<Evaluation>().eq(Evaluation::getAnswerId,
-                            answer != null ? answer.getId() : null)
-            );
+        for (WrongQuestion wq : wqList) {
+            Question question = questionMap.get(wq.getQuestionId());
+            Answer answer = answerMap.get(wq.getQuestionId());
+            Evaluation eval = answer != null ? evalMap.get(answer.getId()) : null;
 
             Map<String, Object> record = new HashMap<>();
             record.put("id", wq.getId().toString());
@@ -225,7 +259,7 @@ public class ReportService extends ServiceImpl<InterviewMapper, Interview> {
         if (wq == null || !wq.getUserId().equals(userId)) {
             throw new BusinessException(ResultCode.FORBIDDEN, "无权操作");
         }
-        wq.setReviewed(true);
+        wq.setReviewed(1);
         wrongQuestionMapper.updateById(wq);
     }
 

@@ -2,6 +2,7 @@ package com.interview.common.util;
 
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.security.Keys;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import javax.crypto.SecretKey;
@@ -11,11 +12,13 @@ import java.util.Date;
 @Component
 public class JwtUtil {
 
-    // 生产环境应从配置中心读取
-    private static final String SECRET = "SmartInterviewPlatform2026JWTSecretKeyForAuth";
     private static final long EXPIRE_SECONDS = 7 * 24 * 3600; // 7天
 
-    private final SecretKey key = Keys.hmacShaKeyFor(SECRET.getBytes(StandardCharsets.UTF_8));
+    private final SecretKey key;
+
+    public JwtUtil(@Value("${jwt.secret:SmartInterviewPlatform2026JWTSecretKeyForAuth}") String secret) {
+        this.key = Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
+    }
 
     /**
      * 生成JWT Token

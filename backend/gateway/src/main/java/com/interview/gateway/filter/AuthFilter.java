@@ -17,6 +17,7 @@ import reactor.core.publisher.Mono;
 
 import java.nio.charset.StandardCharsets;
 import java.util.List;
+import java.util.Set;
 
 @Component
 public class AuthFilter implements GlobalFilter, Ordered {
@@ -24,10 +25,13 @@ public class AuthFilter implements GlobalFilter, Ordered {
     private static final Logger log = LoggerFactory.getLogger(AuthFilter.class);
     private final JwtUtil jwtUtil;
 
-    private static final List<String> WHITE_LIST = List.of(
+    private static final Set<String> WHITE_LIST = Set.of(
             "/api/user/login",
             "/api/user/register",
-            "/api/user/check-username",
+            "/api/user/check-username"
+    );
+
+    private static final List<String> WHITE_PREFIXES = List.of(
             "/api/ai/asr-token"
     );
 
@@ -35,11 +39,19 @@ public class AuthFilter implements GlobalFilter, Ordered {
         this.jwtUtil = jwtUtil;
     }
 
+    private boolean isWhitelisted(String path) {
+        // Exact match
+        if (WHITE_LIST.contains(path)) return true;
+        // Prefix match for parameterized paths
+        if (WHITE_PREFIXES.stream().anyMatch(path::startsWith)) return true;
+        return false;
+    }
+
     @Override
     public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
         String path = exchange.getRequest().getURI().getPath();
 
-        if (WHITE_LIST.stream().anyMatch(path::startsWith)) {
+        if (isWhitelisted(path)) {
             return chain.filter(exchange);
         }
 

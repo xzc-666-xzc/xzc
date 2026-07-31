@@ -18,6 +18,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -30,6 +32,7 @@ public class InterviewService extends ServiceImpl<InterviewMapper, Interview> {
     private final QuestionMapper questionMapper;
     private final EvaluationMapper evaluationMapper;
     private final WrongQuestionMapper wrongQuestionMapper;
+    private final ObjectMapper objectMapper;
 
     @Transactional
     public Interview createInterview(Long userId, CreateInterviewRequest req) {
@@ -157,7 +160,7 @@ public class InterviewService extends ServiceImpl<InterviewMapper, Interview> {
                     wq.setUserId(interview.getUserId());
                     wq.setInterviewId(interviewId);
                     wq.setQuestionId(q.getId());
-                    wq.setReviewed(false);
+                    wq.setReviewed(0);
                     wrongQuestionMapper.insert(wq);
                 }
                 continue;
@@ -222,7 +225,7 @@ public class InterviewService extends ServiceImpl<InterviewMapper, Interview> {
                 wq.setUserId(interview.getUserId());
                 wq.setInterviewId(interviewId);
                 wq.setQuestionId(q.getId());
-                wq.setReviewed(false);
+                wq.setReviewed(0);
                 wrongQuestionMapper.insert(wq);
             }
         }
@@ -402,10 +405,28 @@ public class InterviewService extends ServiceImpl<InterviewMapper, Interview> {
     }
 
     private int calculateTotalScore(Long interviewId) {
+        // 先查出本次面试所有题目ID
+        List<Long> questionIds = questionMapper.selectList(
+                new LambdaQueryWrapper<Question>()
+                        .eq(Question::getInterviewId, interviewId)
+                        .select(Question::getId)
+        ).stream().map(Question::getId).toList();
+
+        if (questionIds.isEmpty()) return 0;
+
+        // 再查出这些题目的所有回答ID
+        List<Long> answerIds = answerMapper.selectList(
+                new LambdaQueryWrapper<Answer>()
+                        .in(Answer::getQuestionId, questionIds)
+                        .select(Answer::getId)
+        ).stream().map(Answer::getId).toList();
+
+        if (answerIds.isEmpty()) return 0;
+
+        // 最后批量查评测
         List<Evaluation> evals = evaluationMapper.selectList(
                 new LambdaQueryWrapper<Evaluation>()
-                        .inSql(Evaluation::getAnswerId,
-                                "SELECT id FROM t_answer WHERE question_id IN (SELECT id FROM t_question WHERE interview_id = " + interviewId + ")"));
+                        .in(Evaluation::getAnswerId, answerIds));
 
         if (evals.isEmpty()) return 0;
         return evals.stream().mapToInt(Evaluation::getOverallScore).sum() / evals.size();
@@ -490,9 +511,13 @@ public class InterviewService extends ServiceImpl<InterviewMapper, Interview> {
         return copy.subList(0, Math.min(count, copy.size()));
     }
 
-    private static String toJson(List<String> list) {
-        if (list.isEmpty()) return "[]";
-        return "[\"" + String.join("\",\"", list) + "\"]";
+    private String toJson(List<String> list) {
+        if (list == null || list.isEmpty()) return "[]";
+        try {
+            return objectMapper.writeValueAsString(list);
+        } catch (JsonProcessingException e) {
+            return "[]";
+        }
     }
 
     // ==================== 分层评语池 ====================

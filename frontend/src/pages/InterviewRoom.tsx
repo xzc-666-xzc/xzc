@@ -38,8 +38,6 @@ export default function InterviewRoom() {
   const [elapsed, setElapsed] = useState(0);
   const [questionIndex, setQuestionIndex] = useState(0);
   const [history, setHistory] = useState<QAItem[]>([]);
-  const [showASRFallback, setShowASRFallback] = useState(false);
-  const [asrConfidence, setAsrConfidence] = useState(1);
   const [showQuitModal, setShowQuitModal] = useState(false);
   const [expandedQA, setExpandedQA] = useState<Set<number>>(new Set());
   const [showAIPanel, setShowAIPanel] = useState(false);
@@ -109,7 +107,7 @@ export default function InterviewRoom() {
     const currentQ = currentQuestion;
     setCurrentInput('');
     setCurrentQuestion(null);
-    addAnswer({ id: `a_${Date.now()}`, questionId: currentQ.id, content: answerContent, duration: elapsed, asrConfidence, createdAt: new Date().toISOString() });
+    addAnswer({ id: `a_${Date.now()}`, questionId: currentQ.id, content: answerContent, duration: elapsed, createdAt: new Date().toISOString() });
     try { await interviewService.submitAnswer(id, { questionId: currentQ.id, content: answerContent, duration: elapsed }); } catch { /* fallback */ }
     await new Promise(r => setTimeout(r, 1500));
     const feedback = generateFeedback(currentQ, answerContent);
@@ -166,10 +164,43 @@ export default function InterviewRoom() {
   };
 
   const handleQuit = () => { interviewService.pause(id || ''); navigate('/'); };
-  const handleVoiceToggle = () => {
-    if (isRecording) { setRecording(false); const c = Math.random(); setAsrConfidence(c); if (c < 0.6) setShowASRFallback(true); }
-    else setRecording(true);
-  };
+
+  // ====== 语音输入：点击麦克风触发浏览器语音识别 ======
+  const handleMicClick = useCallback(async () => {
+    const SRClass = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SRClass) {
+      alert('语音识别需要 Chrome 或 Edge 浏览器');
+      return;
+    }
+    try {
+      await navigator.mediaDevices.getUserMedia({ audio: true });
+    } catch {
+      alert('请允许麦克风权限后重试');
+      return;
+    }
+    if (isRecording) {
+      setRecording(false);
+      return;
+    }
+    setRecording(true);
+    const rec = new SRClass();
+    rec.lang = 'zh-CN';
+    rec.continuous = false;
+    rec.interimResults = true;
+    rec.onresult = (e: any) => {
+      let text = '';
+      for (let i = e.resultIndex; i < e.results.length; i++) {
+        text += e.results[i][0].transcript;
+      }
+      if (text && e.results[0]?.isFinal) {
+        setCurrentInput(prev => prev + (prev ? ' ' : '') + text);
+        setRecording(false);
+      }
+    };
+    rec.onerror = () => setRecording(false);
+    rec.onend = () => setRecording(false);
+    rec.start();
+  }, [isRecording, setRecording]);
 
   const answeredCount = questionIndex + (waitingForNext ? 1 : 0);
   const totalQuestions = config?.questionCount || 8;
@@ -235,12 +266,7 @@ export default function InterviewRoom() {
               ⏸️ 面试已暂停 — 计时器已停止，点击继续按钮恢复
             </div>
           )}
-          {showASRFallback && (
-            <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl px-4 py-3 text-amber-300 text-sm flex items-center justify-between">
-              <span>⚠️ 语音识别置信度过低</span>
-              <button onClick={() => setShowASRFallback(false)} className="text-amber-300 underline text-xs">切换文字输入</button>
-            </div>
-          )}
+
 
           {/* 历史问答 */}
           {history.map((item, idx) => (
@@ -396,17 +422,25 @@ export default function InterviewRoom() {
             ))}
           </div>
           <div className="flex gap-3 items-end">
-            {config?.mode === 'voice' && (
-              <button onClick={handleVoiceToggle}
-                className={`p-3.5 rounded-xl transition-all duration-200 shrink-0 border cursor-pointer select-none
-                  ${isRecording
-                    ? 'bg-red-500/80 border-red-400/40 text-white hover:bg-red-500 hover:border-red-300/60 active:scale-[0.95]'
-                    : 'bg-white/5 border-slate-500/20 text-slate-300 hover:bg-white/10 hover:border-slate-400/40 hover:text-white active:border-indigo-400/50 active:scale-[0.95]'}`}>
-                {isRecording
-                  ? <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-5 h-5"><line x1="1" y1="1" x2="23" y2="23"/><path d="M9 9v3a3 3 0 0 0 5.12 2.12M15 9.34V4a3 3 0 0 0-5.94-.6"/></svg>
-                  : <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-5 h-5"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/></svg>}
-              </button>
-            )}
+            {/* 语音输入按钮 */}
+            <button
+              onClick={handleMicClick}
+              disabled={aiThinking || isPaused}
+              className={`shrink-0 rounded-2xl transition-all duration-200 cursor-pointer select-none
+                ${isRecording
+                  ? 'w-14 h-14 bg-rose-500/90 border-2 border-rose-400/50 text-white shadow-lg shadow-rose-500/25 animate-pulse-ring'
+                  : 'w-12 h-12 bg-white/5 border border-slate-500/20 text-slate-400 hover:bg-white/10 hover:border-slate-400/40 hover:text-white'
+                }
+                ${(aiThinking || isPaused) ? 'opacity-40 cursor-not-allowed' : ''}
+                active:scale-90`}
+              title={isRecording ? '录音中...点击停止' : '点击语音输入'}
+            >
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={isRecording ? 'w-6 h-6' : 'w-5 h-5'}>
+                <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z" />
+                <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
+                <line x1="12" y1="19" x2="12" y2="23" />
+              </svg>
+            </button>
             <div className="flex-1 relative">
               <textarea
                 value={currentInput}

@@ -32,8 +32,11 @@ public class ReportController {
 
     @Operation(summary = "获取逐题评测详情")
     @GetMapping("/reports/evaluate/{answerId}")
-    public R<Map<String, Object>> getEvaluateDetail(@PathVariable Long answerId) {
-        return R.ok(reportService.getEvaluateDetail(answerId));
+    public R<Map<String, Object>> getEvaluateDetail(
+            HttpServletRequest request,
+            @PathVariable Long answerId) {
+        Long userId = authUtil.getUserId(request);
+        return R.ok(reportService.getEvaluateDetail(answerId, userId));
     }
 
     @Operation(summary = "获取错题本列表")

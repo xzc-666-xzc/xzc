@@ -36,7 +36,6 @@ public class User {
     private String role;
 
     /** 账号状态：0-禁用 1-正常 */
-    @TableLogic
     private Integer status;
 
     /** AI面试风格偏好 */

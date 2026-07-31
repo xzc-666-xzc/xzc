@@ -116,6 +116,32 @@ export const reportService = {
     http.get<ApiResponse<unknown>>(`/reports/evaluate/${answerId}`),
 };
 
+// ==================== 语音服务 ====================
+export const voiceService = {
+  /** 服务端 ASR：上传音频 blob，返回识别文本 */
+  transcribe: (audioBlob: Blob, interviewId: string, questionId: string) => {
+    const form = new FormData();
+    form.append('audio', audioBlob, 'recording.webm');
+    form.append('interviewId', interviewId);
+    form.append('questionId', questionId);
+    return http.post<ApiResponse<{ transcript: string; confidence: number }>>(
+      '/voice/transcribe',
+      form,
+      { headers: { 'Content-Type': 'multipart/form-data' }, timeout: 30000 }
+    );
+  },
+
+  /** TTS 合成：文本转语音，返回 audio blob URL */
+  synthesize: (text: string, options?: { rate?: number; pitch?: number }) => {
+    // 优先使用浏览器内置 TTS（无需服务端），服务端 TTS 作为备选
+    return http.post<ApiResponse<{ audioUrl: string }>>('/voice/synthesize', {
+      text,
+      rate: options?.rate || 1,
+      pitch: options?.pitch || 1,
+    });
+  },
+};
+
 // ==================== 错题本服务 ====================
 export const wrongBookService = {
   list: (params?: { page?: number; pageSize?: number; tags?: string[] }) =>

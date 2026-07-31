@@ -27,9 +27,6 @@ mybatis-plus:
     map-underscore-to-camel-case: true
   global-config:
     db-config:
-      logic-delete-field: status
-      logic-delete-value: 0
-      logic-not-delete-value: 1
 
 springdoc:
   swagger-ui:

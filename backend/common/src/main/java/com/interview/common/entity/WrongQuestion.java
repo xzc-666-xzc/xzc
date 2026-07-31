@@ -20,8 +20,8 @@ public class WrongQuestion {
     /** 问题ID */
     private Long questionId;
 
-    /** 是否已复习 */
-    private Boolean reviewed;
+    /** 是否已复习：0-待复习 1-已复习 */
+    private Integer reviewed;
 
     @TableField(fill = FieldFill.INSERT)
     private LocalDateTime createdAt;
