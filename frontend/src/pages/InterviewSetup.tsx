@@ -1,8 +1,9 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useInterviewStore } from '@/stores';
 import { interviewService, positionService } from '@/services/api';
-import { MOCK_POSITIONS } from '@/data/mock';
+import { MOCK_POSITIONS, MOCK_INTERVIEWS } from '@/data/mock';
+import { calculatePositionMatch } from '@/data/aiEngine';
 import type { InterviewConfig, Difficulty, InterviewMode, InterviewType } from '@/types';
 
 interface RawPosition {
@@ -65,6 +66,19 @@ export default function InterviewSetup() {
 
   const selectedPos = positions.find((p) => p.id === selectedPosition);
 
+  // AI 岗位匹配度计算
+  const completedInterviews = useMemo(() => MOCK_INTERVIEWS.filter(
+    r => r.status === 'completed' && r.score != null
+  ), []);
+  const positionMatches = useMemo(() => {
+    const matches: Record<string, number> = {};
+    positions.forEach(p => {
+      const m = calculatePositionMatch(p.id, completedInterviews);
+      matches[p.id] = m?.matchScore || 0;
+    });
+    return matches;
+  }, [positions, completedInterviews]);
+
   const handleStart = async () => {
     if (!selectedPosition) { setError('请先选择岗位'); return; }
     setLoading(true); setError('');
@@ -117,7 +131,7 @@ export default function InterviewSetup() {
                     ? 'bg-emerald-500 text-white shadow-md shadow-emerald-500/20'
                     : isActive
                       ? 'bg-accent-600 text-white shadow-lg shadow-accent-500/25 ring-4 ring-accent-100'
-                      : 'bg-slate-100 text-slate-400'
+                      : 'bg-warm-hover text-slate-400'
                   }`}>
                   {isDone ? (
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" className="w-5 h-5"><polyline points="20 6 9 17 4 12"/></svg>
@@ -167,29 +181,36 @@ export default function InterviewSetup() {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {positions.map((pos) => {
                 const isSelected = selectedPosition === pos.id;
+                const matchScore = positionMatches[pos.id] || 0;
                 return (
                   <button
                     key={pos.id}
                     onClick={() => { setSelectedPosition(pos.id); setError(''); }}
-                    className={`text-left p-5 rounded-2xl border-2 transition-all duration-200 ease-spring
+                    className={`relative text-left p-5 rounded-2xl border-2 transition-all duration-200 ease-spring
                       ${isSelected
                         ? 'border-accent-500 bg-accent-50/50 shadow-md shadow-accent-500/5 ring-2 ring-accent-500/10'
-                        : 'border-slate-200 bg-white hover:border-slate-300 hover:shadow-sm'
+                        : 'border-warmBorder-light bg-white hover:border-slate-300 hover:shadow-sm'
                       }
                       ${isSelected ? 'scale-[1.01]' : 'hover:scale-[1.005]'}
                       active:scale-[0.985]`}
                   >
+                    {/* AI 匹配度标签 */}
+                    {matchScore >= 70 && (
+                      <div className="absolute -top-2 -right-2 px-2 py-0.5 bg-gradient-to-r from-indigo-500 to-purple-500 text-white text-[10px] font-bold rounded-full shadow-sm">
+                        ✨ AI推荐 · {matchScore}%
+                      </div>
+                    )}
                     <div className="flex items-center justify-between mb-2.5">
                       <span className="font-semibold text-slate-800">{pos.name}</span>
                       <span className={`px-2.5 py-0.5 rounded-lg text-xs font-medium border transition-colors
-                        ${isSelected ? 'bg-accent-100 text-accent-700 border-accent-200' : 'bg-slate-50 text-slate-500 border-slate-200'}`}>
+                        ${isSelected ? 'bg-accent-100 text-accent-700 border-accent-200' : 'bg-warm-alt text-slate-500 border-warmBorder-light'}`}>
                         {pos.category}
                       </span>
                     </div>
                     <p className="text-sm text-slate-500 mb-3 leading-relaxed">{pos.description}</p>
                     <div className="flex flex-wrap gap-1.5">
                       {Array.isArray(pos.tags) && pos.tags.map((tag: string) => (
-                        <span key={tag} className="px-2 py-0.5 bg-slate-50 text-slate-500 rounded-md text-xs border border-slate-100">
+                        <span key={tag} className="px-2 py-0.5 bg-warm-alt text-slate-500 rounded-md text-xs border border-warmBorder-light">
                           {tag}
                         </span>
                       ))}
@@ -242,7 +263,7 @@ export default function InterviewSetup() {
                     className={`flex flex-col items-center gap-3 p-5 rounded-2xl border-2 transition-all duration-200 ease-spring text-center
                       ${isActive
                         ? 'border-accent-500 bg-accent-50/50 shadow-md shadow-accent-500/5 ring-2 ring-accent-500/10 scale-[1.02]'
-                        : 'border-slate-200 hover:border-slate-300 hover:shadow-sm hover:scale-[1.005]'
+                        : 'border-warmBorder-light hover:border-slate-300 hover:shadow-sm hover:scale-[1.005]'
                       }
                       ${isDisabled ? 'opacity-40 cursor-not-allowed hover:scale-100' : 'cursor-pointer'}
                       active:scale-[0.97]`}>
@@ -274,7 +295,7 @@ export default function InterviewSetup() {
                     className={`flex items-center gap-2.5 px-5 py-3 rounded-xl border-2 transition-all duration-200 ease-spring text-sm
                       ${isActive
                         ? 'border-accent-500 bg-accent-50 text-accent-700 font-semibold shadow-sm scale-[1.02]'
-                        : 'border-slate-200 text-slate-600 hover:border-slate-300 hover:bg-slate-50'
+                        : 'border-warmBorder-light text-slate-600 hover:border-slate-300 hover:bg-warm-alt'
                       }
                       active:scale-[0.97] cursor-pointer`}>
                     <span className="text-lg">{opt.icon}</span>
@@ -305,7 +326,7 @@ export default function InterviewSetup() {
                         transition-all duration-200 ease-spring text-left
                         ${isActive
                           ? 'border-accent-500 bg-accent-50/50 shadow-sm ring-2 ring-accent-500/10'
-                          : 'border-slate-200 hover:border-slate-300 hover:bg-slate-50'
+                          : 'border-warmBorder-light hover:border-slate-300 hover:bg-warm-alt'
                         }
                         active:scale-[0.98]`}>
                       <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 transition-all
@@ -361,7 +382,7 @@ export default function InterviewSetup() {
                       className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200
                         ${questionCount === n
                           ? 'bg-accent-600 text-white shadow-sm'
-                          : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
+                          : 'bg-warm-hover text-slate-500 hover:bg-slate-200'
                         }
                         active:scale-90 cursor-pointer`}>
                       {n} 题
@@ -370,7 +391,7 @@ export default function InterviewSetup() {
                 </div>
 
                 {/* 实时预览 */}
-                <div className="bg-slate-50 rounded-xl p-4 text-center">
+                <div className="bg-warm-alt rounded-xl p-4 text-center">
                   <p className="text-3xl font-extrabold text-accent-600 tabular-nums">{questionCount}</p>
                   <p className="text-xs text-slate-500 mt-1">道题 · 预计 {questionCount * 3} 分钟</p>
                 </div>
@@ -381,8 +402,8 @@ export default function InterviewSetup() {
           {/* 导航按钮 */}
           <div className="mt-8 flex justify-between">
             <button onClick={() => setCurrentStep(0)}
-              className="px-6 py-3 border-2 border-slate-200 rounded-xl text-slate-600 font-medium
-                         hover:bg-slate-50 hover:border-slate-300 active:scale-95 transition-all duration-200">
+              className="px-6 py-3 border-2 border-warmBorder-light rounded-xl text-slate-600 font-medium
+                         hover:bg-warm-alt hover:border-slate-300 active:scale-95 transition-all duration-200">
               上一步
             </button>
             <button onClick={() => { setCurrentStep(2); setError(''); }}
@@ -417,8 +438,8 @@ export default function InterviewSetup() {
               ['面试类型', typeOptions.find(t => t.value === type)?.label],
               ['预计时长', `${questionCount * 3} 分钟`],
             ].map(([label, val]) => (
-              <div key={label as string} className="bg-slate-50 rounded-xl px-4 py-3.5 text-center
-                                                     border border-slate-100 hover:border-slate-200 transition-colors">
+              <div key={label as string} className="bg-warm-alt rounded-xl px-4 py-3.5 text-center
+                                                     border border-warmBorder-light hover:border-warmBorder-light transition-colors">
                 <p className="text-[11px] text-slate-400 font-medium uppercase tracking-wider">{label}</p>
                 <p className="text-sm font-semibold text-slate-700 mt-1.5">{val}</p>
               </div>
@@ -428,8 +449,8 @@ export default function InterviewSetup() {
           {/* 操作按钮 */}
           <div className="flex justify-center gap-4">
             <button onClick={() => setCurrentStep(1)}
-              className="px-7 py-3 border-2 border-slate-200 rounded-xl text-slate-600 font-medium
-                         hover:bg-slate-50 hover:border-slate-300 active:scale-95 transition-all duration-200">
+              className="px-7 py-3 border-2 border-warmBorder-light rounded-xl text-slate-600 font-medium
+                         hover:bg-warm-alt hover:border-slate-300 active:scale-95 transition-all duration-200">
               返回修改
             </button>
             <button onClick={handleStart} disabled={loading}

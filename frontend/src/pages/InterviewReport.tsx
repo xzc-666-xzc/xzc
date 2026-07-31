@@ -1,8 +1,9 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip } from 'recharts';
 import { reportService } from '@/services/api';
 import { MOCK_REPORT } from '@/data/mock';
+import { analyzeWeakPoints, generateStudyPlan } from '@/data/aiEngine';
 import type { InterviewReport } from '@/types';
 
 export default function InterviewReportPage() {
@@ -146,7 +147,7 @@ export default function InterviewReportPage() {
           {scoreItems.map(item => (
             <div key={item.key} className="flex items-center gap-4">
               <span className="text-sm font-medium text-slate-600 w-28 shrink-0">{item.label}</span>
-              <div className="flex-1 h-3 bg-slate-100 rounded-full overflow-hidden">
+              <div className="flex-1 h-3 bg-warm-hover rounded-full overflow-hidden">
                 <div
                   className={`h-full rounded-full transition-all duration-1000 ease-spring ${
                     item.value >= 80 ? 'bg-gradient-to-r from-emerald-400 to-emerald-500' :
@@ -216,7 +217,7 @@ export default function InterviewReportPage() {
             )}
           </div>
           {report.improvementPlan && (
-            <div className="mt-6 pt-6 border-t border-slate-100">
+            <div className="mt-6 pt-6 border-t border-warmBorder-light">
               <h4 className="text-sm font-semibold text-accent-700 mb-2 flex items-center gap-1.5">💡 改进计划</h4>
               <p className="text-sm text-slate-600 whitespace-pre-wrap leading-relaxed">{report.improvementPlan}</p>
             </div>
@@ -231,7 +232,7 @@ export default function InterviewReportPage() {
             <span className="w-1 h-4 rounded-full bg-accent-500" />逐题分析 & 回放
           </h3>
 
-          <div className="flex border-b border-slate-200 mt-4 px-6 gap-1">
+          <div className="flex border-b border-warmBorder-light mt-4 px-6 gap-1">
             {report.questionDetails!.map((_, idx) => (
               <button key={idx} onClick={() => setActiveTab(idx)}
                 className={`px-4 py-3 text-sm font-semibold border-b-[3px] transition-all duration-200 -mb-[1px]
@@ -247,11 +248,11 @@ export default function InterviewReportPage() {
                 const detail = report.questionDetails![activeTab];
                 return (
                   <>
-                    <div className="bg-slate-50 rounded-2xl p-4">
+                    <div className="bg-warm-alt rounded-2xl p-4">
                       <p className="text-xs font-semibold text-slate-400 mb-2">📋 题目</p>
                       <p className="text-sm text-slate-700 leading-relaxed">{detail.question}</p>
                     </div>
-                    <div className="bg-slate-50 rounded-2xl p-4">
+                    <div className="bg-warm-alt rounded-2xl p-4">
                       <p className="text-xs font-semibold text-slate-400 mb-2">✏️ 你的回答</p>
                       <p className="text-sm text-slate-600 leading-relaxed">{detail.answer}</p>
                     </div>
@@ -294,9 +295,9 @@ export default function InterviewReportPage() {
                           </div>
                         )}
                         {detail.evaluation.referenceAnswer && (
-                          <details className="bg-slate-50 rounded-2xl overflow-hidden group">
+                          <details className="bg-warm-alt rounded-2xl overflow-hidden group">
                             <summary className="px-5 py-3.5 cursor-pointer text-sm text-accent-700 font-semibold
-                                                   hover:bg-slate-100 transition-colors select-none">
+                                                   hover:bg-warm-hover transition-colors select-none">
                               📖 查看高分参考答案
                             </summary>
                             <p className="px-5 pb-5 text-sm text-slate-600 leading-relaxed">{detail.evaluation.referenceAnswer}</p>
@@ -312,6 +313,9 @@ export default function InterviewReportPage() {
         </div>
       )}
 
+      {/* ===== AI 教练深度分析 ===== */}
+      <AIReportAnalysis totalScore={report.totalScore} />
+
       {/* ===== Actions ===== */}
       <div className="flex justify-center gap-4 pb-16">
         <button onClick={() => navigate('/setup')}
@@ -320,12 +324,93 @@ export default function InterviewReportPage() {
           再来一次面试
         </button>
         <button onClick={() => navigate('/wrong-book')}
-          className="border-2 border-slate-200 text-slate-600 px-8 py-3.5 rounded-xl font-semibold text-[15px]
-                     hover:bg-slate-50 hover:border-slate-300 active:scale-95 transition-all duration-200
+          className="border-2 border-warmBorder-light text-slate-600 px-8 py-3.5 rounded-xl font-semibold text-[15px]
+                     hover:bg-warm-alt hover:border-slate-300 active:scale-95 transition-all duration-200
                      flex items-center gap-2.5">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-5 h-5"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
           查看错题本
         </button>
+      </div>
+    </div>
+  );
+}
+
+// ==================== AI 教练深度分析面板 ====================
+function AIReportAnalysis({ totalScore }: { totalScore: number }) {
+  const weakPoints = useMemo(() => analyzeWeakPoints([]), []);
+  const plan = useMemo(() => generateStudyPlan(weakPoints), [weakPoints]);
+
+  return (
+    <div className="card p-6 mb-8">
+      <div className="flex items-center gap-3 mb-5">
+        <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-lg shadow-sm">
+          🤖
+        </div>
+        <div>
+          <h3 className="font-semibold text-slate-800">AI 教练 · 小空 深度分析</h3>
+          <p className="text-xs text-slate-400">基于你的面试数据生成个性化建议</p>
+        </div>
+      </div>
+
+      {/* 弱项分析 */}
+      <div className="mb-6">
+        <h4 className="text-sm font-semibold text-slate-700 mb-3 flex items-center gap-2">
+          <span className="w-1 h-4 rounded-full bg-amber-400" />
+          📊 技能维度分析
+        </h4>
+        <div className="space-y-3">
+          {weakPoints.map(wp => (
+            <div key={wp.tag} className="flex items-center gap-4">
+              <span className="text-sm font-medium text-slate-600 w-24 shrink-0">{wp.label}</span>
+              <div className="flex-1 h-2.5 bg-warm-hover rounded-full overflow-hidden">
+                <div
+                  className={`h-full rounded-full transition-all duration-1000 ${
+                    wp.level === 'good'
+                      ? 'bg-gradient-to-r from-emerald-400 to-emerald-500'
+                      : wp.level === 'moderate'
+                        ? 'bg-gradient-to-r from-amber-400 to-amber-500'
+                        : 'bg-gradient-to-r from-rose-400 to-rose-500'
+                  }`}
+                  style={{ width: `${wp.score}%` }}
+                />
+              </div>
+              <span className={`text-sm font-bold w-10 text-right tabular-nums ${
+                wp.level === 'good' ? 'text-emerald-600' : wp.level === 'moderate' ? 'text-amber-600' : 'text-rose-600'
+              }`}>{wp.score}</span>
+              <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full ${
+                wp.level === 'good' ? 'bg-emerald-50 text-emerald-600' : wp.level === 'moderate' ? 'bg-amber-50 text-amber-600' : 'bg-rose-50 text-rose-600'
+              }`}>
+                {wp.level === 'good' ? '✅ 良好' : wp.level === 'moderate' ? '📈 中等' : '⚠️ 薄弱'}
+              </span>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* 学习计划 */}
+      <div>
+        <h4 className="text-sm font-semibold text-slate-700 mb-3 flex items-center gap-2">
+          <span className="w-1 h-4 rounded-full bg-indigo-400" />
+          🎯 学习计划（AI 生成）
+        </h4>
+        <div className="space-y-3">
+          {plan.weeks.map((week, i) => (
+            <div key={i} className="bg-warm-alt rounded-xl p-4 border border-warmBorder-light hover:border-warmBorder-light transition-colors">
+              <p className="text-sm font-semibold text-slate-700 mb-2">{week.label}</p>
+              <ul className="space-y-1">
+                {week.tasks.map((task, j) => (
+                  <li key={j} className="flex items-start gap-2 text-sm text-slate-600">
+                    <span className="text-indigo-400 mt-0.5 shrink-0">▸</span>
+                    {task}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
+        </div>
+        <p className="text-xs text-slate-400 mt-3 text-center">
+          🎯 目标达成日期：<span className="font-semibold text-indigo-500">{plan.targetDate}</span>
+        </p>
       </div>
     </div>
   );

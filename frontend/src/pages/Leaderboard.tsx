@@ -90,7 +90,7 @@ export default function Leaderboard() {
       ) : (
         <div className="card overflow-hidden">
           {/* Header */}
-          <div className="grid grid-cols-[60px_1fr_120px_120px] px-6 py-4 bg-slate-50/80 border-b border-slate-100">
+          <div className="grid grid-cols-[60px_1fr_120px_120px] px-6 py-4 bg-warm-alt/80 border-b border-warmBorder-light">
             <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">排名</span>
             <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">用户名</span>
             <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider text-center">面试次数</span>
@@ -106,7 +106,7 @@ export default function Leaderboard() {
                 <div
                   key={entry.username + idx}
                   className={`grid grid-cols-[60px_1fr_120px_120px] px-6 py-4 items-center transition-all duration-200
-                    hover:bg-slate-50/60
+                    hover:bg-warm-alt/60
                     ${isTop3 ? 'bg-amber-50/20' : ''}`}
                 >
                   {/* Rank */}
@@ -129,7 +129,7 @@ export default function Leaderboard() {
                     {isTop3 && (
                       <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${
                         rank === 1 ? 'bg-amber-100 text-amber-700' :
-                        rank === 2 ? 'bg-slate-100 text-slate-600' :
+                        rank === 2 ? 'bg-warm-hover text-slate-600' :
                         'bg-amber-100/60 text-amber-700'
                       }`}>
                         TOP {rank}

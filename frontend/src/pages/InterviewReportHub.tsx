@@ -69,7 +69,7 @@ export default function InterviewReportHub() {
       <div className="flex items-center justify-between mb-8">
         <div className="flex items-center gap-3">
           <button onClick={() => navigate('/')}
-            className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-slate-200 text-sm font-medium
+            className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-warmBorder-light text-sm font-medium
                        text-slate-500 hover:text-slate-700 hover:bg-white hover:border-slate-300 hover:shadow-sm
                        active:scale-95 transition-all duration-200 cursor-pointer select-none">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4"><polyline points="15 18 9 12 15 6"/></svg>
@@ -78,7 +78,7 @@ export default function InterviewReportHub() {
           <h1 className="text-xl font-extrabold text-slate-800 tracking-tight">面试报告</h1>
         </div>
         <button onClick={() => { loadData(); }}
-          className="px-4 py-2 rounded-xl border border-slate-200 text-xs font-medium text-slate-400
+          className="px-4 py-2 rounded-xl border border-warmBorder-light text-xs font-medium text-slate-400
                      hover:text-slate-600 hover:bg-white hover:shadow-sm active:scale-95 transition-all cursor-pointer">
           🔄 刷新数据
         </button>
@@ -86,7 +86,7 @@ export default function InterviewReportHub() {
 
       {/* Tab switch */}
       <div className="flex justify-center mb-8">
-        <div className="flex bg-white rounded-2xl p-1.5 shadow-sm border border-slate-200/60">
+        <div className="flex bg-white rounded-2xl p-1.5 shadow-sm border border-warmBorder-light">
           <button onClick={() => setTab('overview')}
             className={`px-6 py-2.5 rounded-xl text-sm font-semibold transition-all duration-200 ease-spring cursor-pointer select-none
               ${tab === 'overview'
@@ -322,7 +322,7 @@ function WeaknessManager({ wrongList, pendingWrong, onReview, navigate }: {
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
                   <button onClick={() => setDetailId(w.id)}
-                    className="p-2.5 rounded-xl border border-slate-200 text-slate-400 hover:bg-slate-50 hover:text-slate-600 active:scale-90 transition-all cursor-pointer" title="查看详情">
+                    className="p-2.5 rounded-xl border border-warmBorder-light text-slate-400 hover:bg-warm-alt hover:text-slate-600 active:scale-90 transition-all cursor-pointer" title="查看详情">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
                   </button>
                   {!w.reviewed && (
@@ -350,7 +350,7 @@ function WeaknessManager({ wrongList, pendingWrong, onReview, navigate }: {
 
       {/* Reviewed toggle */}
       {reviewed.length > 0 && (
-        <div className="border-t border-slate-200 pt-5">
+        <div className="border-t border-warmBorder-light pt-5">
           <button onClick={() => setShowReviewed(!showReviewed)}
             className="flex items-center gap-2 text-sm font-medium text-slate-400 hover:text-slate-600 transition-colors cursor-pointer">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
@@ -374,12 +374,12 @@ function WeaknessManager({ wrongList, pendingWrong, onReview, navigate }: {
                 <div className="space-y-5">
                   <div className="flex items-center justify-between">
                     <h3 className="font-bold text-slate-800 text-lg">错题详情</h3>
-                    <button onClick={() => setDetailId(null)} className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-400 active:scale-90 transition-all">
+                    <button onClick={() => setDetailId(null)} className="p-1.5 rounded-lg hover:bg-warm-hover text-slate-400 active:scale-90 transition-all">
                       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-5 h-5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
                     </button>
                   </div>
                   {[
-                    { label: '📋 题目', value: w.question, bg: 'bg-slate-50' },
+                    { label: '📋 题目', value: w.question, bg: 'bg-warm-alt' },
                     { label: '❌ 你的回答', value: w.myAnswer || '(无回答内容)', bg: 'bg-rose-50/50' },
                     { label: '✅ 参考答案', value: w.referenceAnswer || '(暂无)', bg: 'bg-emerald-50/50' },
                   ].map(s => (

@@ -2,14 +2,11 @@ import { Routes, Route, Navigate } from 'react-router-dom';
 import { useUserStore } from '@/stores';
 import MainLayout from '@/components/Layout';
 import LoginPage from '@/pages/Login';
-import RegisterPage from '@/pages/Register';
 import Dashboard from '@/pages/Dashboard';
 import InterviewSetup from '@/pages/InterviewSetup';
 import InterviewRoom from '@/pages/InterviewRoom';
 import InterviewReport from '@/pages/InterviewReport';
 import InterviewReportHub from '@/pages/InterviewReportHub';
-import InterviewHistory from '@/pages/InterviewHistory';
-import WrongBook from '@/pages/WrongBook';
 import Leaderboard from '@/pages/Leaderboard';
 import Profile from '@/pages/Profile';
 import AdminPanel from '@/pages/admin/AdminPanel';
@@ -33,7 +30,7 @@ export default function App() {
     <Routes>
       {/* 未登录默认进入登录页 */}
       <Route path="/login" element={<GuestRoute><LoginPage /></GuestRoute>} />
-      <Route path="/register" element={<GuestRoute><RegisterPage /></GuestRoute>} />
+      <Route path="/register" element={<Navigate to="/login" replace />} />
       {/* 主界面需登录 */}
       <Route
         path="/"

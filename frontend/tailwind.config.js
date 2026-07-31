@@ -59,6 +59,34 @@ export default {
           900: '#134e4a',
         },
         dark: '#1E293B',
+        // ====== 暖色背景系统 ======
+        warm: {
+          page:   '#f7f3ee',   // 最底层：暖杏灰
+          surface:'#fdfbf9',   // 第二层：米白（侧栏/面板）
+          card:   '#ffffff',   // 第三层：纯白（卡片）
+          alt:    '#faf7f3',   // 卡片备选
+          hover:  '#f5ede6',   // 悬停态
+          active: '#ece1d7',   // 选中态
+          selected:'#ede7e0',  // 已选状态
+        },
+        // ====== 暖色文字系统 ======
+        ink: {
+          primary:  '#1a1410',  // 深暖黑
+          secondary:'#5c534a',  // 暖灰棕
+          muted:    '#a09287',  // 浅暖灰
+        },
+        // ====== 暖色边框 ======
+        warmBorder: {
+          light:  '#e8e0d8',
+          medium: '#d5ccc2',
+        },
+        // ====== 柔和状态色 ======
+        soft: {
+          success: '#5b8c5a',
+          warning: '#d4a055',
+          danger:  '#c26565',
+          info:    '#5b7f9e',
+        },
       },
       fontFamily: {
         sans: ['-apple-system', 'BlinkMacSystemFont', '"PingFang SC"', '"Microsoft YaHei"', '"Segoe UI"', 'Roboto', 'sans-serif'],

@@ -24,8 +24,14 @@ public class LlmService {
     @Value("${ai.llm.base-url:https://api.openai.com/v1}")
     private String baseUrl;
 
-    @Value("${ai.llm.model:gpt-4o}")
+    @Value("${ai.llm.model:deepseek-chat}")
     private String model;
+
+    @Value("${ai.llm.temperature:0.7}")
+    private double defaultTemperature;
+
+    @Value("${ai.llm.max-tokens:2048}")
+    private int maxTokens;
 
     public LlmService(ObjectMapper objectMapper) {
         this.objectMapper = objectMapper;
@@ -69,6 +75,13 @@ public class LlmService {
     }
 
     /**
+     * 通用对话（DeepSeek Chat）
+     */
+    public Mono<String> chat(String message, String systemPrompt) {
+        return callLlm(message, systemPrompt, defaultTemperature);
+    }
+
+    /**
      * 通用LLM调用方法
      */
     private Mono<String> callLlm(String prompt, String systemPrompt, double temperature) {
@@ -84,7 +97,7 @@ public class LlmService {
                         Map.of("role", "user", "content", prompt)
                 ),
                 "temperature", temperature,
-                "max_tokens", 2000
+                "max_tokens", maxTokens
         );
 
         return webClient.post()

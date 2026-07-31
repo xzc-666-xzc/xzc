@@ -72,7 +72,7 @@ export default function Profile() {
       )}
 
       {/* Tabs */}
-      <div className="flex gap-1 bg-slate-100 rounded-xl p-1.5 mb-8 w-fit">
+      <div className="flex gap-1 bg-warm-hover rounded-xl p-1.5 mb-8 w-fit">
         {tabs.map(tab => (
           <button key={tab.key} onClick={() => setActiveTab(tab.key)}
             className={`px-5 py-2.5 rounded-lg text-sm font-semibold transition-all duration-200 ease-spring
@@ -102,19 +102,19 @@ export default function Profile() {
             <div>
               <label className="block text-sm font-semibold text-slate-700 mb-2">用户名</label>
               <input type="text" value={username} onChange={e => setUsername(e.target.value)} required
-                className="input-focus w-full border border-slate-200 rounded-xl px-4 py-3 text-sm bg-slate-50
+                className="input-focus w-full border border-warmBorder-light rounded-xl px-4 py-3 text-sm bg-warm-alt
                            placeholder:text-slate-400" />
             </div>
             <div>
               <label className="block text-sm font-semibold text-slate-700 mb-2">邮箱</label>
               <input type="email" value={email} onChange={e => setEmail(e.target.value)} required
-                className="input-focus w-full border border-slate-200 rounded-xl px-4 py-3 text-sm bg-slate-50
+                className="input-focus w-full border border-warmBorder-light rounded-xl px-4 py-3 text-sm bg-warm-alt
                            placeholder:text-slate-400" />
             </div>
             <div>
               <label className="block text-sm font-semibold text-slate-700 mb-2">手机号</label>
               <input type="tel" value={phone} onChange={e => setPhone(e.target.value)}
-                className="input-focus w-full border border-slate-200 rounded-xl px-4 py-3 text-sm bg-slate-50
+                className="input-focus w-full border border-warmBorder-light rounded-xl px-4 py-3 text-sm bg-warm-alt
                            placeholder:text-slate-400" />
             </div>
             <button type="submit" disabled={loading}
@@ -132,17 +132,17 @@ export default function Profile() {
             <div>
               <label className="block text-sm font-semibold text-slate-700 mb-2">当前密码</label>
               <input type="password" value={oldPwd} onChange={e => setOldPwd(e.target.value)} required
-                className="input-focus w-full border border-slate-200 rounded-xl px-4 py-3 text-sm bg-slate-50" />
+                className="input-focus w-full border border-warmBorder-light rounded-xl px-4 py-3 text-sm bg-warm-alt" />
             </div>
             <div>
               <label className="block text-sm font-semibold text-slate-700 mb-2">新密码</label>
               <input type="password" value={newPwd} onChange={e => setNewPwd(e.target.value)} required minLength={6}
-                className="input-focus w-full border border-slate-200 rounded-xl px-4 py-3 text-sm bg-slate-50" />
+                className="input-focus w-full border border-warmBorder-light rounded-xl px-4 py-3 text-sm bg-warm-alt" />
             </div>
             <div>
               <label className="block text-sm font-semibold text-slate-700 mb-2">确认新密码</label>
               <input type="password" value={confirmPwd} onChange={e => setConfirmPwd(e.target.value)} required
-                className="input-focus w-full border border-slate-200 rounded-xl px-4 py-3 text-sm bg-slate-50" />
+                className="input-focus w-full border border-warmBorder-light rounded-xl px-4 py-3 text-sm bg-warm-alt" />
             </div>
             <button type="submit"
               className="btn-brand w-full py-3 text-sm">
@@ -159,7 +159,7 @@ export default function Profile() {
             <div>
               <label className="block text-sm font-semibold text-slate-700 mb-2">AI 面试风格</label>
               <select value={aiStyle} onChange={e => setAiStyle(e.target.value)}
-                className="input-focus w-full border border-slate-200 rounded-xl px-4 py-3 text-sm bg-slate-50">
+                className="input-focus w-full border border-warmBorder-light rounded-xl px-4 py-3 text-sm bg-warm-alt">
                 <option value="strict">严格模式 - 连续追问，不留情面</option>
                 <option value="friendly">友好模式 - 温和引导，循序渐进</option>
                 <option value="balanced">平衡模式 - 适中难度，张弛有度</option>
@@ -168,14 +168,14 @@ export default function Profile() {
             <div>
               <label className="block text-sm font-semibold text-slate-700 mb-2">语音播报速度</label>
               <select value={voiceSpeed} onChange={e => setVoiceSpeed(e.target.value)}
-                className="input-focus w-full border border-slate-200 rounded-xl px-4 py-3 text-sm bg-slate-50">
+                className="input-focus w-full border border-warmBorder-light rounded-xl px-4 py-3 text-sm bg-warm-alt">
                 <option value="slow">慢速</option>
                 <option value="normal">正常</option>
                 <option value="fast">快速</option>
               </select>
             </div>
 
-            <hr className="border-slate-100" />
+            <hr className="border-warmBorder-light" />
 
             <div className="space-y-5">
               {[

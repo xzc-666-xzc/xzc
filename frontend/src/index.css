@@ -18,7 +18,8 @@
   }
 
   body {
-    background-color: #f8fafc;
+    background-color: #f7f3ee;
+    color: #1a1410;
   }
 
   /* 全局 focus 环 — WCAG AA 可见焦点指示 */
@@ -39,9 +40,10 @@
     transition: stroke-dashoffset 1s cubic-bezier(0.16, 1, 0.3, 1);
   }
 
-  /* ====== 统一卡片 ====== */
+  /* ====== 统一卡片 — 暖色背景 ====== */
   .card {
-    @apply bg-white rounded-2xl border border-slate-100 shadow-card;
+    @apply bg-white rounded-2xl border shadow-card;
+    border-color: #e8e0d8;
   }
 
   /* 卡片悬停微交互 — 上浮 + 阴影增强 */

@@ -8,12 +8,18 @@ spring:
     exclude:
       - org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration
       - org.springframework.boot.autoconfigure.data.redis.RedisAutoConfiguration
-
 ai:
   llm:
-    api-key: ${AI_API_KEY:}
-    base-url: https://api.openai.com/v1
-    model: gpt-4o
+    # DeepSeek API Key（从环境变量读取）
+    api-key: ${DEEPSEEK_API_KEY:}
+    # DeepSeek API 地址（兼容 OpenAI 协议）
+    base-url: https://api.deepseek.com/v1
+    # DeepSeek 模型：deepseek-chat / deepseek-coder
+    model: deepseek-chat
+    # 温度参数（0-2），控制回答随机性
+    temperature: 0.7
+    # 最大输出令牌数
+    max-tokens: 2048
   asr:
     provider: iflytek
     app-id: ${ASR_APP_ID:}
