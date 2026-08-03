@@ -38,6 +38,12 @@ public class Interview {
     /** 当前题目索引 */
     private Integer currentQuestionIndex;
 
+    /** 面试邀请码(6位数字)，HR创建时生成，候选人通过此码加入 */
+    private String code;
+
+    /** 创建人ID(HR)，记录该面试模板由谁创建 */
+    private Long createdBy;
+
     /** 总得分 */
     private Integer score;
 

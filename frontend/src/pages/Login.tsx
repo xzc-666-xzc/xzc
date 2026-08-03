@@ -153,41 +153,127 @@ export default function LoginPage() {
   return (
     <div className="h-screen flex bg-[#0a0e17] overflow-hidden">
       {/* ===== 左侧品牌区 ===== */}
-      <div className="hidden lg:flex w-[42%] xl:w-[45%] relative overflow-hidden bg-black">
-        <img
-          src="/images/login_left_panel.jpg"
-          alt=""
-          className="absolute inset-0 w-full h-full object-contain scale-90"
-        />
-        <div className="absolute inset-0 bg-gradient-to-r from-black/70 via-black/35 to-black/60" />
+      <div className="hidden lg:flex w-[42%] xl:w-[45%] relative overflow-hidden bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900">
+        {/* 丰富背景 */}
+        <div className="absolute inset-0 overflow-hidden">
+          <div className="absolute inset-0 opacity-[0.04]"
+            style={{ backgroundImage: 'radial-gradient(circle at 25% 30%, rgba(99,102,241,0.5) 0px, transparent 1px), radial-gradient(circle at 75% 60%, rgba(139,92,246,0.4) 0px, transparent 1px)', backgroundSize: '40px 40px' }} />
+          <div className="absolute top-0 left-0 w-[500px] h-[500px] bg-indigo-600/20 rounded-full blur-[150px] -translate-x-1/2 -translate-y-1/3" />
+          <div className="absolute bottom-0 right-0 w-[400px] h-[400px] bg-purple-600/20 rounded-full blur-[130px] translate-x-1/3 translate-y-1/3" />
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[350px] h-[350px] bg-indigo-500/10 rounded-full blur-[100px]" />
+        </div>
 
-        <div className="relative z-10 flex flex-col justify-between h-full p-12">
+        <div className="relative z-10 flex flex-col h-full p-10 xl:p-12">
           {/* Logo */}
-          <div className="flex items-center gap-3.5">
-            <div className="w-11 h-11 rounded-xl bg-white/10 backdrop-blur-sm flex items-center justify-center
-                            border border-white/15 shadow-lg">
-              <svg viewBox="0 0 24 24" fill="white" className="w-5 h-5">
+          <div className="flex items-center gap-3.5 shrink-0">
+            <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-indigo-400 to-purple-500 flex items-center justify-center shadow-xl shadow-indigo-500/30 ring-1 ring-white/20">
+              <svg viewBox="0 0 24 24" fill="white" className="w-6 h-6">
                 <polygon points="5,3 19,12 5,21" />
               </svg>
             </div>
             <div>
-              <h1 className="text-white font-bold text-xl tracking-tight">智能面试评测平台</h1>
-              <p className="text-white/40 text-xs mt-0.5">专业模拟 · 精准评测</p>
+              <h1 className="text-white font-extrabold text-2xl tracking-tight">智面</h1>
+              <p className="text-indigo-300/50 text-[11px] font-medium tracking-wide">SMART INTERVIEW PLATFORM</p>
             </div>
           </div>
 
-          {/* Stats */}
-          <div className="flex items-center gap-12">
-            {[
-              { value: '10,000+', label: '模拟面试' },
-              { value: '50+', label: '岗位方向' },
-              { value: '98%', label: '用户好评' },
-            ].map((stat) => (
-              <div key={stat.label}>
-                <p className="text-white font-bold text-2xl tracking-tight">{stat.value}</p>
-                <p className="text-white/35 text-xs mt-1">{stat.label}</p>
+          {/* 主视觉：大号 AI 面试场景 */}
+          <div className="flex-1 flex flex-col justify-center gap-5 py-6 min-h-0">
+            {/* Hero 标题 */}
+            <div className="mb-2">
+              <h2 className="text-white/90 font-extrabold text-[28px] leading-tight tracking-tight">
+                AI 驱动的<br />下一代<br /><span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-300 to-purple-300">模拟面试平台</span>
+              </h2>
+              <p className="text-indigo-300/40 text-xs mt-3 leading-relaxed max-w-[85%]">
+                融合大语言模型 · 多模态交互 · 五维智能评测
+              </p>
+            </div>
+
+            {/* 面试流程示意卡片 */}
+            <div className="space-y-3">
+              {/* 卡片 1：创建面试 */}
+              <div className="bg-white/[0.06] backdrop-blur rounded-2xl p-4 border border-white/[0.08] flex items-center gap-4 hover:bg-white/[0.09] transition-colors group">
+                <div className="w-10 h-10 rounded-xl bg-indigo-500/20 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-5 h-5 text-indigo-400">
+                    <path d="M12 5v14M5 12h14" />
+                  </svg>
+                </div>
+                <div className="min-w-0">
+                  <p className="text-white/80 text-sm font-semibold">创建面试</p>
+                  <p className="text-white/25 text-[11px] truncate">选择岗位与难度，一键生成专属面试</p>
+                </div>
+                <span className="ml-auto text-white/15 text-xs font-mono shrink-0">01</span>
               </div>
-            ))}
+
+              {/* 卡片 2：AI 面试官提问 */}
+              <div className="bg-white/[0.06] backdrop-blur rounded-2xl p-4 border border-white/[0.08] flex items-center gap-4 hover:bg-white/[0.09] transition-colors group">
+                <div className="w-10 h-10 rounded-xl bg-purple-500/20 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-5 h-5 text-purple-400">
+                    <circle cx="12" cy="12" r="10" /><polygon points="10,8 16,12 10,16" fill="currentColor" opacity="0.3" />
+                  </svg>
+                </div>
+                <div className="min-w-0">
+                  <p className="text-white/80 text-sm font-semibold">AI 智能提问</p>
+                  <p className="text-white/25 text-[11px] truncate">大模型驱动，精准匹配岗位考点</p>
+                </div>
+                <span className="ml-auto text-white/15 text-xs font-mono shrink-0">02</span>
+              </div>
+
+              {/* 卡片 3：多维度评测 */}
+              <div className="bg-white/[0.06] backdrop-blur rounded-2xl p-4 border border-white/[0.08] flex items-center gap-4 hover:bg-white/[0.09] transition-colors group">
+                <div className="w-10 h-10 rounded-xl bg-emerald-500/20 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-5 h-5 text-emerald-400">
+                    <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
+                  </svg>
+                </div>
+                <div className="min-w-0">
+                  <p className="text-white/80 text-sm font-semibold">五维智能评测</p>
+                  <p className="text-white/25 text-[11px] truncate">内容·逻辑·深度·表达·STAR 全方位评分</p>
+                </div>
+                <span className="ml-auto text-white/15 text-xs font-mono shrink-0">03</span>
+              </div>
+
+              {/* 卡片 4：生成报告 */}
+              <div className="bg-white/[0.06] backdrop-blur rounded-2xl p-4 border border-white/[0.08] flex items-center gap-4 hover:bg-white/[0.09] transition-colors group">
+                <div className="w-10 h-10 rounded-xl bg-amber-500/20 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-5 h-5 text-amber-400">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" /><line x1="16" y1="13" x2="8" y2="13" /><line x1="16" y1="17" x2="8" y2="17" />
+                  </svg>
+                </div>
+                <div className="min-w-0">
+                  <p className="text-white/80 text-sm font-semibold">详细报告生成</p>
+                  <p className="text-white/25 text-[11px] truncate">雷达图分析 + 逐题详解 + 改进建议</p>
+                </div>
+                <span className="ml-auto text-white/15 text-xs font-mono shrink-0">04</span>
+              </div>
+            </div>
+
+            {/* 底部亮点数据条 */}
+            <div className="flex gap-3 mt-2">
+              <div className="flex-1 bg-white/[0.05] backdrop-blur rounded-2xl p-3 border border-white/[0.06] text-center">
+                <p className="text-white/70 font-extrabold text-lg">50+</p>
+                <p className="text-white/25 text-[10px]">覆盖岗位</p>
+              </div>
+              <div className="flex-1 bg-white/[0.05] backdrop-blur rounded-2xl p-3 border border-white/[0.06] text-center">
+                <p className="text-white/70 font-extrabold text-lg">3 种</p>
+                <p className="text-white/25 text-[10px]">交互模式</p>
+              </div>
+              <div className="flex-1 bg-white/[0.05] backdrop-blur rounded-2xl p-3 border border-white/[0.06] text-center">
+                <p className="text-white/70 font-extrabold text-lg">5 维</p>
+                <p className="text-white/25 text-[10px]">评分体系</p>
+              </div>
+              <div className="flex-1 bg-white/[0.05] backdrop-blur rounded-2xl p-3 border border-white/[0.06] text-center">
+                <p className="text-white/70 font-extrabold text-lg">500+</p>
+                <p className="text-white/25 text-[10px]">题库储备</p>
+              </div>
+            </div>
+          </div>
+
+          {/* 底部标识 */}
+          <div className="pt-4 border-t border-white/[0.06] shrink-0">
+            <p className="text-white/15 text-[10px] text-center tracking-widest">
+              POWERED BY AI · 专业模拟 · 精准评测
+            </p>
           </div>
         </div>
       </div>

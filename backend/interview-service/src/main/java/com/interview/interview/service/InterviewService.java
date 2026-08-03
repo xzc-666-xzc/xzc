@@ -9,6 +9,7 @@ import com.interview.common.exception.BusinessException;
 import com.interview.common.result.PageResult;
 import com.interview.common.result.ResultCode;
 import com.interview.interview.controller.InterviewController.CreateInterviewRequest;
+import com.interview.interview.controller.InterviewController.CreateByHrRequest;
 import com.interview.interview.mapper.InterviewMapper;
 import com.interview.interview.mapper.AnswerMapper;
 import com.interview.interview.mapper.QuestionMapper;
@@ -441,6 +442,100 @@ public class InterviewService extends ServiceImpl<InterviewMapper, Interview> {
         if (totalScore >= 30) return "当前表现较弱，回答内容明显不足，缺乏专业深度和逻辑结构。建议先系统梳理岗位所需的核心知识体系，通过写技术博客等方式锻炼表达能力，再进行面试练习。";
         return "当前准备还不够充分，大多数回答未能展现应有的专业能力。建议从零开始系统学习岗位要求的基础知识，多阅读优秀面经和技术文章，积累足够的专业储备后再进行模拟面试。";
     }
+
+    // ==================== HR 面试码相关 ====================
+
+    /**
+     * HR 创建面试模板并生成唯一6位邀请码
+     */
+    @Transactional
+    public Interview createByHr(Long hrUserId, CreateByHrRequest req) {
+        Interview interview = new Interview();
+        interview.setUserId(hrUserId);
+        interview.setCreatedBy(hrUserId);
+        interview.setPositionId(req.getPositionId());
+        interview.setPositionName(req.getPositionName());
+        interview.setDifficulty(req.getDifficulty());
+        interview.setMode(req.getMode());
+        interview.setType(req.getType());
+        interview.setQuestionCount(req.getQuestionCount());
+        interview.setStatus("pending");
+        interview.setCurrentQuestionIndex(0);
+        interview.setCode(generateUniqueCode());
+        this.save(interview);
+        return interview;
+    }
+
+    /**
+     * 候选人通过邀请码加入面试
+     */
+    @Transactional
+    public Interview joinByCode(Long candidateUserId, String code) {
+        if (code == null || code.trim().isEmpty()) {
+            throw new BusinessException(ResultCode.BAD_REQUEST, "邀请码不能为空");
+        }
+        Interview interview = this.getOne(
+                new LambdaQueryWrapper<Interview>()
+                        .eq(Interview::getCode, code.trim())
+                        .eq(Interview::getStatus, "pending"));
+        if (interview == null) {
+            throw new BusinessException(ResultCode.NOT_FOUND, "邀请码无效或该面试已被使用");
+        }
+        interview.setUserId(candidateUserId);
+        interview.setStatus("in_progress");
+        interview.setStartedAt(LocalDateTime.now());
+        this.updateById(interview);
+        return interview;
+    }
+
+    /**
+     * HR 查看自己创建的面试会话列表
+     */
+    public PageResult<Map<String, Object>> getHrList(Long hrUserId, int page, int pageSize) {
+        IPage<Interview> pageResult = this.page(
+                new Page<>(page, pageSize),
+                new LambdaQueryWrapper<Interview>()
+                        .eq(Interview::getCreatedBy, hrUserId)
+                        .orderByDesc(Interview::getCreatedAt));
+
+        List<Map<String, Object>> records = pageResult.getRecords().stream()
+                .map(i -> {
+                    Map<String, Object> m = new HashMap<>();
+                    m.put("id", i.getId().toString());
+                    m.put("code", i.getCode());
+                    m.put("positionName", i.getPositionName());
+                    m.put("difficulty", i.getDifficulty());
+                    m.put("mode", i.getMode());
+                    m.put("type", i.getType());
+                    m.put("questionCount", i.getQuestionCount());
+                    m.put("status", i.getStatus());
+                    m.put("createdAt", i.getCreatedAt() != null ? i.getCreatedAt().toString() : null);
+                    return m;
+                })
+                .collect(Collectors.toList());
+
+        return PageResult.of(records, pageResult.getTotal(), pageResult.getCurrent(), pageResult.getSize());
+    }
+
+    /**
+     * 生成唯一的6位数字邀请码
+     */
+    private String generateUniqueCode() {
+        Random random = new Random();
+        String code;
+        int maxAttempts = 100;
+        do {
+            code = String.format("%06d", random.nextInt(1000000));
+            long count = this.count(
+                    new LambdaQueryWrapper<Interview>()
+                            .eq(Interview::getCode, code));
+            if (count == 0) return code;
+            maxAttempts--;
+        } while (maxAttempts > 0);
+        throw new BusinessException(ResultCode.INTERNAL_ERROR, "生成面试码失败，请重试");
+    }
+
+    // ==================== 原有方法 ====================
 
     @Transactional
     public void pauseInterview(Long interviewId, Long userId) {

@@ -135,6 +135,67 @@ public class InterviewController {
         return R.ok();
     }
 
+    // ==================== HR 面试码相关 ====================
+
+    @Data
+    public static class CreateByHrRequest {
+        @NotBlank private String positionId;
+        @NotBlank private String positionName;
+        @NotBlank private String difficulty;
+        @NotBlank private String mode;
+        @NotBlank private String type;
+        @NotNull private Integer questionCount;
+    }
+
+    @Data
+    public static class JoinByCodeRequest {
+        @NotBlank private String code;
+    }
+
+    @Operation(summary = "HR创建面试(生成邀请码)")
+    @PostMapping("/create-by-hr")
+    public R<Map<String, Object>> createByHr(
+            HttpServletRequest request,
+            @Valid @RequestBody CreateByHrRequest req) {
+        Long userId = authUtil.getUserId(request);
+        com.interview.common.entity.Interview interview = interviewService.createByHr(userId, req);
+        return R.ok(Map.of(
+                "interviewId", interview.getId().toString(),
+                "code", interview.getCode()
+        ));
+    }
+
+    @Operation(summary = "候选人通过邀请码加入面试")
+    @PostMapping("/join-by-code")
+    public R<Map<String, Object>> joinByCode(
+            HttpServletRequest request,
+            @Valid @RequestBody JoinByCodeRequest req) {
+        Long userId = authUtil.getUserId(request);
+        com.interview.common.entity.Interview interview = interviewService.joinByCode(userId, req.getCode());
+        return R.ok(Map.of(
+                "interviewId", interview.getId().toString(),
+                "positionId", interview.getPositionId(),
+                "positionName", interview.getPositionName(),
+                "difficulty", interview.getDifficulty(),
+                "mode", interview.getMode(),
+                "type", interview.getType(),
+                "questionCount", interview.getQuestionCount(),
+                "duration", interview.getQuestionCount() * 3
+        ));
+    }
+
+    @Operation(summary = "HR查看自己创建的面试列表")
+    @GetMapping("/hr-list")
+    public R<PageResult<Map<String, Object>>> getHrList(
+            HttpServletRequest request,
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "10") int pageSize) {
+        Long userId = authUtil.getUserId(request);
+        return R.ok(interviewService.getHrList(userId, page, pageSize));
+    }
+
+    // ==================== 原有端点 ====================
+
     @Operation(summary = "获取面试历史")
     @GetMapping("/history")
     public R<PageResult<Map<String, Object>>> getHistory(

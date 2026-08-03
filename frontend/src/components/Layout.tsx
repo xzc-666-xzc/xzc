@@ -1,9 +1,10 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { useUserStore } from '@/stores';
 import AIFloatingChat from '@/components/AIFloatingChat';
 import AISidebar from '@/components/AISidebar';
 import { aiChatStore } from '@/stores/aiChatStore';
+import { NEW_FEATURE_KEY, FEATURE_BADGE_MAP, UPDATE_HISTORY } from '@/config/features';
 
 const candidateMenuItems = [
   { key: '/', icon: 'dashboard', label: '工作台' },
@@ -97,6 +98,12 @@ export default function MainLayout() {
   const [collapsed, setCollapsed] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [searchFocused, setSearchFocused] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [showSearchResults, setShowSearchResults] = useState(false);
+  const [showNotifications, setShowNotifications] = useState(false);
+  const [readUpdates, setReadUpdates] = useState<number>(() => {
+    try { return parseInt(localStorage.getItem('read_updates_count') || '0', 10); } catch { return 0; }
+  });
   const navigate = useNavigate();
   const location = useLocation();
   const { user, logout } = useUserStore();
@@ -125,6 +132,67 @@ export default function MainLayout() {
     aiChatStore.open();
   }, []);
 
+  // ==================== 搜索索引 ====================
+  const searchIndex = [
+    { keywords: ['模拟面试', 'ai面试', '开始面试', '面试', 'ai'], title: 'AI 模拟面试', href: '/setup', desc: '开始一场AI驱动的模拟面试' },
+    { keywords: ['报告', '评测', '成绩', '历史', '记录'], title: '面试报告', href: '/reports', desc: '查看面试评测报告与历史记录' },
+    { keywords: ['排行', '竞技', '排名', '榜', 'pk'], title: '竞技排行榜', href: '/leaderboard', desc: '查看全平台面试成绩排名' },
+    { keywords: ['个人', '信息', '设置', '资料', '密码', '账号'], title: '个人中心', href: '/profile', desc: '管理个人信息与账号设置' },
+    { keywords: ['面试码', '邀请码', '加入', '码', '专属'], title: '面试码加入', href: '/', desc: '输入邀请码加入专属面试频道' },
+    { keywords: ['管理', '题库', '监控', '用户管理', '后台'], title: '管理中心', href: '/admin', desc: '平台数据管理与面试监控' },
+    { keywords: ['多模态', '语音', '视频', '文字', '模式'], title: '多模态面试', href: '/setup', desc: '支持文本、语音、视频三种面试模式' },
+  ];
+
+  const handleSearch = useCallback((query: string) => {
+    setSearchQuery(query);
+    if (!query.trim()) { setShowSearchResults(false); return; }
+    const q = query.trim().toLowerCase();
+    const results = searchIndex
+      .map(item => {
+        let score = 0;
+        for (const kw of item.keywords) {
+          if (kw === q) score = 100;           // 精确匹配
+          else if (kw.startsWith(q)) score = Math.max(score, 60); // 前缀匹配
+          else if (kw.includes(q)) score = Math.max(score, 30);   // 包含匹配
+        }
+        return { ...item, score };
+      })
+      .filter(r => r.score > 0)
+      .sort((a, b) => b.score - a.score);
+    // 精确命中（分数100）→ 直接跳转
+    if (results.length > 0 && results[0].score >= 100) {
+      navigate(results[0].href);
+      setSearchQuery('');
+      setShowSearchResults(false);
+      return;
+    }
+    setShowSearchResults(true);
+  }, [navigate]);
+
+  // ==================== 通知数据 ====================
+  const notifications = UPDATE_HISTORY.slice(0, 3);
+  const hasNew = notifications.length > readUpdates;
+
+  const handleBellClick = () => {
+    if (hasNew) {
+      localStorage.setItem('read_updates_count', String(notifications.length));
+      setReadUpdates(notifications.length);
+    }
+    setShowNotifications(!showNotifications);
+  };
+
+  // 点击外部关闭
+  const notificationsRef = useRef<HTMLDivElement>(null);
+  const searchRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (notificationsRef.current && !notificationsRef.current.contains(e.target as Node)) setShowNotifications(false);
+      if (searchRef.current && !searchRef.current.contains(e.target as Node)) setShowSearchResults(false);
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
+
   const isInterviewPage = location.pathname.startsWith('/interview');
   const isReportPage = location.pathname.startsWith('/report');
 
@@ -135,7 +203,7 @@ export default function MainLayout() {
       <aside
         className={`${
           collapsed ? 'w-[68px]' : 'w-60'
-        } bg-warm-surface/95 backdrop-blur-xl border-r flex flex-col transition-all duration-300 ease-spring shrink-0 overflow-hidden relative`}
+        } bg-warm-page backdrop-blur-xl border-r flex flex-col transition-all duration-300 ease-spring shrink-0 overflow-hidden relative`}
         style={{ borderColor: '#e8e0d8' }}
       >
         {/* 折叠/展开切换按钮 — 悬浮在侧边栏右边缘 */}
@@ -196,6 +264,14 @@ export default function MainLayout() {
                   {icons[item.icon]}
                 </span>
                 {!collapsed && <span>{item.label}</span>}
+                {/* 新功能标识 — 由 features.ts 配置控制 */}
+                {(() => {
+                  const badge = FEATURE_BADGE_MAP[NEW_FEATURE_KEY as string];
+                  if (badge && item.key === badge.sidebarKey && !collapsed) {
+                    return <span className="ml-auto px-1.5 py-0.5 bg-rose-500 text-white text-[9px] font-extrabold rounded-md leading-none animate-pulse">新</span>;
+                  }
+                  return null;
+                })()}
                 {/* Tooltip when collapsed */}
                 {collapsed && (
                   <span className="absolute left-full ml-3 px-2.5 py-1.5 bg-slate-800 text-white text-xs rounded-lg
@@ -292,26 +368,94 @@ export default function MainLayout() {
           {/* Right: search + notification + user */}
           <div className="flex items-center gap-3">
             {/* Search */}
-            <div className={`hidden sm:flex items-center gap-2 rounded-xl border px-3 py-1.5 transition-all duration-300
-              ${searchFocused
-                ? 'border-accent-400 bg-white shadow-sm ring-2 ring-accent-500/10 w-56'
-                : 'border-slate-200 bg-slate-50/50 w-44 hover:border-slate-300'}`}>
-              <span className="text-slate-400 shrink-0">{icons.search}</span>
-              <input
-                onFocus={() => setSearchFocused(true)}
-                onBlur={() => setSearchFocused(false)}
-                placeholder="搜索..."
-                className="bg-transparent text-sm text-slate-600 placeholder-slate-400 outline-none w-full"
-              />
+            <div ref={searchRef} className="relative">
+              <div className={`hidden sm:flex items-center gap-2 rounded-xl border px-3 py-1.5 transition-all duration-300
+                ${searchFocused || showSearchResults
+                  ? 'border-accent-400 bg-white shadow-sm ring-2 ring-accent-500/10 w-56'
+                  : 'border-slate-200 bg-slate-50/50 w-44 hover:border-slate-300'}`}>
+                <span className="text-slate-400 shrink-0">{icons.search}</span>
+                <input
+                  value={searchQuery}
+                  onChange={e => handleSearch(e.target.value)}
+                  onFocus={() => setSearchFocused(true)}
+                  onBlur={() => setTimeout(() => setSearchFocused(false), 200)}
+                  placeholder="搜索功能..."
+                  className="bg-transparent text-sm text-slate-600 placeholder-slate-400 outline-none w-full"
+                />
+              </div>
+              {/* 搜索结果下拉 */}
+              {showSearchResults && searchQuery.trim() && (
+                <div className="absolute top-full mt-2 right-0 w-72 bg-white rounded-2xl shadow-card-elevated border border-slate-100 py-2 z-50 animate-scale-in overflow-hidden">
+                  {searchIndex
+                    .filter(item => searchIndex.some(si => {
+                      const q = searchQuery.trim().toLowerCase();
+                      return si.keywords.some(kw => kw.includes(q));
+                    }) && item.keywords.some(kw => kw.includes(searchQuery.trim().toLowerCase()))
+                    )
+                    .slice(0, 5)
+                    .length > 0 ? (
+                    searchIndex
+                      .filter(item => item.keywords.some(kw => kw.includes(searchQuery.trim().toLowerCase())))
+                      .slice(0, 5)
+                      .map(item => (
+                        <button key={item.href + item.title}
+                          onClick={() => { navigate(item.href); setSearchQuery(''); setShowSearchResults(false); }}
+                          className="w-full text-left px-4 py-2.5 hover:bg-slate-50 transition-colors flex items-center gap-3 group">
+                          <span className="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center text-sm group-hover:bg-accent-50 group-hover:text-accent-600 transition-colors shrink-0">
+                            {item.title.includes('面试') ? '🎯' : item.title.includes('报告') ? '📊' : item.title.includes('排行') ? '🏆' : item.title.includes('个人') ? '👤' : item.title.includes('管理') ? '⚙️' : '📌'}
+                          </span>
+                          <div className="min-w-0">
+                            <p className="text-sm font-medium text-slate-700">{item.title}</p>
+                            <p className="text-[11px] text-slate-400 truncate">{item.desc}</p>
+                          </div>
+                        </button>
+                      ))
+                  ) : (
+                    <div className="px-4 py-6 text-center">
+                      <p className="text-sm text-slate-400">该平台暂无与此相关的功能</p>
+                      <p className="text-xs text-slate-300 mt-1">试试其他关键词吧</p>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
 
             {/* Notification bell */}
-            <button className="relative p-2 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-600
-                               transition-all duration-200 active:scale-90"
-                    title="通知">
-              {icons.bell}
-              <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-rose-500 ring-2 ring-white" />
-            </button>
+            <div ref={notificationsRef} className="relative">
+              <button onClick={handleBellClick}
+                className="relative p-2 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-600
+                           transition-all duration-200 active:scale-90"
+                title="通知">
+                {icons.bell}
+                {hasNew && (
+                  <span className="absolute top-1.5 right-1.5 w-2.5 h-2.5 rounded-full bg-rose-500 ring-2 ring-white animate-pulse" />
+                )}
+              </button>
+              {/* 通知下拉卡片 */}
+              {showNotifications && (
+                <div className="absolute top-full mt-2 right-0 w-80 bg-white rounded-2xl shadow-card-elevated border border-slate-100 py-3 z-50 animate-scale-in overflow-hidden">
+                  <div className="flex items-center justify-between px-4 mb-2">
+                    <h3 className="text-sm font-bold text-slate-800">📢 最近更新</h3>
+                    {!hasNew && <span className="text-[10px] text-slate-400">已读</span>}
+                  </div>
+                  <div className="divide-y divide-slate-50">
+                    {notifications.length > 0 ? (
+                      notifications.map((n, i) => (
+                        <div key={i} className="px-4 py-2.5 hover:bg-slate-50 transition-colors">
+                          <p className="text-xs text-slate-500 mb-0.5">{n.date}</p>
+                          <p className="text-sm text-slate-700 leading-relaxed line-clamp-1" title={n.text}>{n.text}</p>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="px-4 py-8 text-center">
+                        <p className="text-sm text-slate-400">暂无最新动态</p>
+                        <p className="text-xs text-slate-300 mt-1">保持关注哦~</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
 
             {/* User avatar */}
             <div className="relative z-30">
@@ -374,7 +518,10 @@ export default function MainLayout() {
         </main>
 
         {/* ==================== AI 浮动助手 ==================== */}
-        <AIFloatingChat context={{ position: undefined, score: undefined }} />
+        <AIFloatingChat context={{
+          position: location.pathname.startsWith('/interview/video') ? 'video' : undefined,
+          score: undefined,
+        }} />
       </div>
     </div>
   );

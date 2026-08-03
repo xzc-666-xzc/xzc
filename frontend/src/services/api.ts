@@ -105,6 +105,27 @@ export const interviewService = {
 
   resume: (interviewId: string) =>
     http.post<ApiResponse<unknown>>(`/interviews/${interviewId}/resume`),
+
+  /** HR 创建面试模板并生成邀请码 */
+  createByHR: (config: Omit<import('@/types').InterviewConfig, 'duration'>) =>
+    http.post<ApiResponse<{ interviewId: string; code: string }>>('/interviews/create-by-hr', config),
+
+  /** 候选人通过邀请码加入面试 */
+  joinByCode: (code: string) =>
+    http.post<ApiResponse<{
+      interviewId: string;
+      positionId: string;
+      positionName: string;
+      difficulty: string;
+      mode: string;
+      type: string;
+      questionCount: number;
+      duration: number;
+    }>>('/interviews/join-by-code', { code }),
+
+  /** HR 查看自己创建的面试模板列表 */
+  getHrList: (params?: { page?: number; pageSize?: number }) =>
+    http.get<ApiResponse<import('@/types').PageData<import('@/types').InterviewTemplate>>>('/interviews/hr-list', { params }),
 };
 
 // ==================== 报告服务 ====================

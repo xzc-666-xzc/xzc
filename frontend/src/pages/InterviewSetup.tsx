@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useInterviewStore } from '@/stores';
+import { NEW_FEATURE_KEY, FEATURE_BADGE_MAP } from '@/config/features';
 import { interviewService, positionService } from '@/services/api';
 import { MOCK_POSITIONS, MOCK_INTERVIEWS } from '@/data/mock';
 import { calculatePositionMatch } from '@/data/aiEngine';
@@ -23,7 +24,7 @@ const difficultyOptions: { value: Difficulty; label: string; desc: string; color
 const modeOptions: { value: InterviewMode; label: string; icon: JSX.Element; desc: string }[] = [
   { value: 'text', label: '文字面试', icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" className="w-6 h-6"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>, desc: '通过文本对话完成面试' },
   { value: 'voice', label: '语音面试', icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" className="w-6 h-6"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/></svg>, desc: '语音实时交流，转写为文字' },
-  { value: 'video', label: '视频面试', icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" className="w-6 h-6"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>, desc: '视频面对面（三期开放）' },
+  { value: 'video', label: '视频面试', icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" className="w-6 h-6"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>, desc: 'AI视频面对面，新体验' },
 ];
 
 const typeOptions: { value: InterviewType; label: string; desc: string; icon: string }[] = [
@@ -92,6 +93,26 @@ export default function InterviewSetup() {
       questionCount,
       duration: questionCount * 3,
     };
+    // 视频面试走独立流程
+    if (mode === 'video') {
+      try {
+        const res = await fetch('/api/interviews/video/room/create', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${localStorage.getItem('token')}` },
+          body: JSON.stringify({ positionId: selectedPosition, positionName: pos?.name, difficulty, type, questionCount }),
+        });
+        const data = await res.json();
+        if (data.data?.roomId) {
+          navigate(`/interview/video/${data.data.roomId}`);
+        } else {
+          setError('创建视频房间失败');
+        }
+      } catch {
+        setError('创建视频房间失败，请重试');
+      }
+      setLoading(false);
+      return;
+    }
     try {
       const res = await interviewService.create(config);
       const data = res.data?.data;
@@ -256,16 +277,14 @@ export default function InterviewSetup() {
             <div className="grid grid-cols-3 gap-3">
               {modeOptions.map((opt) => {
                 const isActive = mode === opt.value;
-                const isDisabled = opt.value === 'video';
+                const isNew = (NEW_FEATURE_KEY as string) === 'video-interview' && opt.value === 'video';
                 return (
-                  <button key={opt.value} onClick={() => !isDisabled && setMode(opt.value)}
-                    disabled={isDisabled}
-                    className={`flex flex-col items-center gap-3 p-5 rounded-2xl border-2 transition-all duration-200 ease-spring text-center
+                  <button key={opt.value} onClick={() => setMode(opt.value)}
+                    className={`flex flex-col items-center gap-3 p-5 rounded-2xl border-2 transition-all duration-200 ease-spring text-center relative
                       ${isActive
                         ? 'border-accent-500 bg-accent-50/50 shadow-md shadow-accent-500/5 ring-2 ring-accent-500/10 scale-[1.02]'
-                        : 'border-warmBorder-light hover:border-slate-300 hover:shadow-sm hover:scale-[1.005]'
+                        : 'border-warmBorder-light hover:border-slate-300 hover:shadow-sm hover:scale-[1.005] cursor-pointer'
                       }
-                      ${isDisabled ? 'opacity-40 cursor-not-allowed hover:scale-100' : 'cursor-pointer'}
                       active:scale-[0.97]`}>
                     <span className={`transition-colors duration-200 ${isActive ? 'text-accent-600' : 'text-slate-400'}`}>
                       {opt.icon}
@@ -274,7 +293,7 @@ export default function InterviewSetup() {
                       {opt.label}
                     </span>
                     <span className="text-xs text-slate-400 leading-relaxed">{opt.desc}</span>
-                    {isDisabled && <span className="px-2.5 py-0.5 bg-orange-100 text-orange-500 rounded-full text-xs font-medium">三期开放</span>}
+                    {isNew && <span className="absolute top-2 right-2 px-1.5 py-0.5 bg-rose-500 text-white rounded text-[9px] font-extrabold leading-none animate-pulse">新</span>}
                   </button>
                 );
               })}

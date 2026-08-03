@@ -137,3 +137,16 @@ export interface PageData<T> {
   pageSize: number;
   pages: number;
 }
+
+/** HR创建的面试模板（用于管理后台列表展示） */
+export interface InterviewTemplate {
+  id: string;
+  code: string;
+  positionName: string;
+  difficulty: Difficulty;
+  mode: InterviewMode;
+  type: InterviewType;
+  questionCount: number;
+  status: InterviewStatus;
+  createdAt: string;
+}

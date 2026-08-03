@@ -5,6 +5,7 @@ import LoginPage from '@/pages/Login';
 import Dashboard from '@/pages/Dashboard';
 import InterviewSetup from '@/pages/InterviewSetup';
 import InterviewRoom from '@/pages/InterviewRoom';
+import InterviewVideo from '@/pages/InterviewVideo';
 import InterviewReport from '@/pages/InterviewReport';
 import InterviewReportHub from '@/pages/InterviewReportHub';
 import Leaderboard from '@/pages/Leaderboard';
@@ -43,6 +44,7 @@ export default function App() {
         <Route index element={<Dashboard />} />
         <Route path="setup" element={<InterviewSetup />} />
         <Route path="interview/:id" element={<InterviewRoom />} />
+        <Route path="interview/video/:roomId" element={<InterviewVideo />} />
         <Route path="report/:id" element={<InterviewReport />} />
         <Route path="reports" element={<InterviewReportHub />} />
         <Route path="history" element={<Navigate to="/reports" replace />} />

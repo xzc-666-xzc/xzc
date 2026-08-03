@@ -2,11 +2,12 @@ import { useState, useEffect } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts';
 import { MOCK_POSITIONS, MOCK_INTERVIEWS } from '@/data/mock';
 import { useUserStore } from '@/stores';
-import { userService, interviewService } from '@/services/api';
+import { userService, interviewService, positionService } from '@/services/api';
 import { questionBanks } from '@/data/questions';
 import type { PositionBank, QuestionTemplate } from '@/data/questions';
+import type { InterviewTemplate, Difficulty, InterviewMode, InterviewType } from '@/types';
 
-type Tab = 'overview' | 'users' | 'questions' | 'monitor';
+type Tab = 'overview' | 'users' | 'questions' | 'monitor' | 'create';
 
 const SYSTEM_USERS_FALLBACK = [
   { id: '1', username: 'Gxzc', email: 'Gxzc@interview.com', role: 'admin', totalInterviews: 0, avgScore: 0, createdAt: '2026-01-01' },
@@ -49,6 +50,7 @@ const allTabs: { key: Tab; label: string; icon: JSX.Element; roles: string[] }[]
   { key: 'users', label: '用户管理', icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>, roles: ['admin'] },
   { key: 'questions', label: '题库管理', icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>, roles: ['admin', 'hr', 'teacher'] },
   { key: 'monitor', label: '面试监控', icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>, roles: ['admin', 'hr'] },
+  { key: 'create', label: '创建面试', icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4"><path d="M12 5v14M5 12h14"/></svg>, roles: ['admin', 'hr'] },
 ];
 
 const roleTitles: Record<string, { title: string; desc: string }> = {
@@ -112,6 +114,7 @@ export default function AdminPanel() {
       {activeTab === 'users' && <UsersTab />}
       {activeTab === 'questions' && <QuestionsTab />}
       {activeTab === 'monitor' && <MonitorTab />}
+      {activeTab === 'create' && <CreateInterviewTab />}
     </div>
   );
 }
@@ -738,6 +741,296 @@ function MonitorTab() {
           </table>
         </div>
       </div>
+    </div>
+  );
+}
+
+// ==================== Create Interview Tab ====================
+function CreateInterviewTab() {
+  const [positionId, setPositionId] = useState('');
+  const [positions, setPositions] = useState<Array<{ id: string; name: string }>>([]);
+  const [difficulty, setDifficulty] = useState('middle');
+  const [mode, setMode] = useState('text');
+  const [type, setType] = useState('technical');
+  const [questionCount, setQuestionCount] = useState(8);
+  const [loading, setLoading] = useState(false);
+  const [createdCode, setCreatedCode] = useState<string | null>(null);
+  const [error, setError] = useState('');
+
+  const [sessions, setSessions] = useState<InterviewTemplate[]>([]);
+  const [listLoading, setListLoading] = useState(true);
+
+  useEffect(() => { loadPositions(); loadSessions(); }, []);
+
+  const loadPositions = async () => {
+    try {
+      const res = await positionService.list();
+      const data = res.data?.data as Array<{ id: string; name: string }> | undefined;
+      if (data) setPositions(data);
+    } catch {
+      setPositions(MOCK_POSITIONS.map(p => ({ id: p.id, name: p.name })));
+    }
+  };
+
+  const loadSessions = async () => {
+    setListLoading(true);
+    try {
+      const res = await interviewService.getHrList({ page: 1, pageSize: 50 });
+      const data = (res.data?.data as { records: InterviewTemplate[] })?.records;
+      if (data) setSessions(data);
+    } catch { /* silently fail */ }
+    setListLoading(false);
+  };
+
+  const handleCreate = async () => {
+    if (!positionId) { setError('请选择岗位'); return; }
+    const pos = positions.find(p => p.id === positionId);
+    setLoading(true); setError(''); setCreatedCode(null);
+    try {
+      const res = await interviewService.createByHR({
+        positionId,
+        positionName: pos?.name || positionId,
+        difficulty: difficulty as Difficulty,
+        mode: mode as InterviewMode,
+        type: type as InterviewType,
+        questionCount,
+      });
+      const data = res.data?.data;
+      if (data?.code) {
+        setCreatedCode(data.code);
+        setPositionId('');
+        setDifficulty('middle');
+        loadSessions();
+      }
+    } catch {
+      setError('创建失败，请重试');
+    }
+    setLoading(false);
+  };
+
+  const difficultyOptions = [
+    { key: 'junior', label: '初级', desc: '基础入门' },
+    { key: 'middle', label: '中级', desc: '项目实战' },
+    { key: 'senior', label: '高级', desc: '架构设计' },
+    { key: 'expert', label: '专家', desc: '行业视野' },
+  ];
+
+  const modeOptions = [
+    { key: 'text', label: '文本', icon: '💬', disabled: false },
+    { key: 'voice', label: '语音', icon: '🎙️', disabled: false },
+    { key: 'video', label: '视频', icon: '📹', disabled: false },
+  ];
+
+  const typeOptions = [
+    { key: 'technical', label: '技术面', desc: '技术深度与工程能力' },
+    { key: 'hr', label: 'HR面', desc: '综合素质与文化匹配' },
+    { key: 'stress', label: '压力面', desc: '抗压与临场应变' },
+    { key: 'boss', label: 'Boss面', desc: '战略思维与商业认知' },
+  ];
+
+  const countPresets = [5, 8, 10, 15];
+
+  return (
+    <div className="animate-fade-in space-y-6">
+      {/* ====== 成功提示 ====== */}
+      {createdCode && (
+        <div className="bg-emerald-50 border-2 border-emerald-300 rounded-2xl p-6 text-center animate-scale-in max-w-2xl mx-auto">
+          <p className="text-emerald-700 font-semibold text-sm mb-2">✅ 面试创建成功！邀请码：</p>
+          <p className="text-4xl font-extrabold text-emerald-600 tracking-[0.3em] font-mono mb-2">{createdCode}</p>
+          <p className="text-xs text-emerald-500 mb-4">将此码分享给候选人，对方即可通过该码加入面试</p>
+          <button onClick={() => { navigator.clipboard.writeText(createdCode); alert('已复制到剪贴板'); }}
+            className="px-4 py-2 bg-emerald-600 text-white rounded-xl text-sm font-semibold hover:bg-emerald-700 active:scale-95 transition-all">
+            📋 复制邀请码
+          </button>
+        </div>
+      )}
+
+      {/* ====== 表单 + 会话列表 并排 ====== */}
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+        {/* 左：创建表单 */}
+        <div className="card">
+        <h2 className="text-lg font-extrabold text-slate-800 mb-6 flex items-center gap-2.5">
+          <span className="w-8 h-8 rounded-xl bg-gradient-to-br from-accent-500 to-brand-600 flex items-center justify-center">
+            <svg viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" className="w-4 h-4"><path d="M12 5v14M5 12h14"/></svg>
+          </span>
+          创建专属面试
+        </h2>
+
+        {/* 岗位选择 */}
+        <div className="mb-6">
+          <label className="block text-sm font-semibold text-slate-700 mb-3">选择岗位</label>
+          <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
+            {positions.map(p => (
+              <button key={p.id} onClick={() => { setPositionId(p.id); setError(''); }}
+                className={`text-left p-3.5 rounded-xl border-2 transition-all duration-200 active:scale-[0.97]
+                  ${positionId === p.id
+                    ? 'border-accent-400 bg-accent-50/60 ring-2 ring-accent-200 shadow-sm'
+                    : 'border-warmBorder-light bg-white hover:border-slate-300 hover:shadow-sm'
+                  }`}>
+                <span className="text-sm font-semibold text-slate-800">{p.name}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* 难度 + 模式 */}
+        <div className="grid grid-cols-2 gap-6 mb-6">
+          <div>
+            <label className="block text-sm font-semibold text-slate-700 mb-3">难度等级</label>
+            <div className="grid grid-cols-4 gap-2">
+              {difficultyOptions.map(d => (
+                <button key={d.key} onClick={() => setDifficulty(d.key)}
+                  className={`p-2.5 rounded-xl border text-center transition-all duration-200 active:scale-95
+                    ${difficulty === d.key
+                      ? 'border-accent-400 bg-accent-50 text-accent-700 shadow-sm'
+                      : 'border-warmBorder-light bg-white text-slate-600 hover:border-slate-300'
+                    }`}>
+                  <div className="text-xs font-bold">{d.label}</div>
+                  <div className="text-[10px] opacity-60">{d.desc}</div>
+                </button>
+              ))}
+            </div>
+          </div>
+          <div>
+            <label className="block text-sm font-semibold text-slate-700 mb-3">面试模式</label>
+            <div className="flex gap-3">
+              {modeOptions.map(m => (
+                <button key={m.key} onClick={() => !m.disabled && setMode(m.key)}
+                  disabled={m.disabled}
+                  className={`flex-1 p-3 rounded-xl border text-center transition-all duration-200 active:scale-95
+                    ${m.disabled ? 'opacity-40 cursor-not-allowed bg-slate-50 border-slate-100' : ''}
+                    ${mode === m.key && !m.disabled
+                      ? 'border-accent-400 bg-accent-50 text-accent-700 shadow-sm'
+                      : !m.disabled ? 'border-warmBorder-light bg-white text-slate-600 hover:border-slate-300' : ''
+                    }`}>
+                  <div className="text-xl mb-0.5">{m.icon}</div>
+                  <div className="text-xs font-semibold">{m.label}{m.disabled ? ' (即将开放)' : ''}</div>
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* 面试类型 */}
+        <div className="mb-6">
+          <label className="block text-sm font-semibold text-slate-700 mb-3">面试类型</label>
+          <div className="grid grid-cols-4 gap-2">
+            {typeOptions.map(t => (
+              <button key={t.key} onClick={() => setType(t.key)}
+                className={`p-2.5 rounded-xl border text-center transition-all duration-200 active:scale-95
+                  ${type === t.key
+                    ? 'border-accent-400 bg-accent-50 text-accent-700 shadow-sm'
+                    : 'border-warmBorder-light bg-white text-slate-600 hover:border-slate-300'
+                  }`}>
+                <div className="text-xs font-bold">{t.label}</div>
+                <div className="text-[10px] opacity-60">{t.desc}</div>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* 题目数量 */}
+        <div className="mb-6">
+          <label className="block text-sm font-semibold text-slate-700 mb-3">题目数量</label>
+          <div className="flex items-center gap-4">
+            {countPresets.map(n => (
+              <button key={n} onClick={() => setQuestionCount(n)}
+                className={`w-12 h-10 rounded-xl border text-sm font-bold transition-all duration-200 active:scale-95
+                  ${questionCount === n
+                    ? 'border-accent-400 bg-accent-50 text-accent-700 shadow-sm'
+                    : 'border-warmBorder-light bg-white text-slate-500 hover:border-slate-300'
+                  }`}>{n}</button>
+            ))}
+            <input type="range" min={3} max={20} value={questionCount} onChange={e => setQuestionCount(Number(e.target.value))}
+              className="flex-1 accent-accent-600" />
+            <span className="text-sm font-bold text-slate-700 min-w-[4rem] text-right">{questionCount} 道题</span>
+            <span className="text-xs text-ink-muted">约 {questionCount * 3} 分钟</span>
+          </div>
+        </div>
+
+        {/* 错误提示 */}
+        {error && <p className="text-rose-500 text-xs font-semibold mb-4 bg-rose-50 px-3 py-2 rounded-lg">{error}</p>}
+
+        {/* 提交按钮 */}
+        <button onClick={handleCreate} disabled={loading}
+          className="w-full py-3 rounded-xl bg-gradient-to-r from-accent-600 to-brand-600 text-white font-bold text-sm
+                     hover:from-accent-700 hover:to-brand-700 disabled:opacity-50 disabled:cursor-not-allowed
+                     active:scale-[0.98] transition-all duration-200 shadow-button hover:shadow-button-hover">
+          {loading ? '正在生成邀请码...' : '🎯 生成邀请码'}
+        </button>
+      </div>
+
+      {/* ====== 会话列表 ====== */}
+      <div className="card">
+        <h2 className="text-lg font-extrabold text-slate-800 mb-5 flex items-center gap-2.5">
+          <span className="w-8 h-8 rounded-xl bg-gradient-to-br from-teal-500 to-emerald-600 flex items-center justify-center">
+            <svg viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" className="w-4 h-4"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg>
+          </span>
+          已创建的面试会话
+        </h2>
+
+        {listLoading ? (
+          <div className="flex justify-center py-12">
+            <div className="w-8 h-8 border-[3px] border-accent-200 border-t-accent-600 rounded-full animate-spin" />
+          </div>
+        ) : sessions.length === 0 ? (
+          <div className="text-center py-12 text-slate-400">
+            <p className="text-4xl mb-3">📋</p>
+            <p className="text-sm font-medium">暂无面试会话</p>
+            <p className="text-xs mt-1">创建第一个面试，生成邀请码分享给候选人</p>
+          </div>
+        ) : (
+          <div className="overflow-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-slate-100">
+                  <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500">邀请码</th>
+                  <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500">岗位</th>
+                  <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500">难度</th>
+                  <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500">模式</th>
+                  <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500">题数</th>
+                  <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500">状态</th>
+                  <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500">创建时间</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-50">
+                {sessions.map(s => (
+                  <tr key={s.id} className="hover:bg-warm-alt/50 transition-colors">
+                    <td className="px-4 py-3.5">
+                      <span className="font-mono font-bold text-accent-700 tracking-wider bg-accent-50 px-2 py-0.5 rounded">{s.code}</span>
+                    </td>
+                    <td className="px-4 py-3.5 font-medium text-slate-800">{s.positionName}</td>
+                    <td className="px-4 py-3.5">
+                      <span className={`px-2 py-0.5 rounded-lg text-xs font-semibold
+                        ${s.difficulty === 'expert' ? 'bg-rose-50 text-rose-600' :
+                          s.difficulty === 'senior' ? 'bg-amber-50 text-amber-700' :
+                          s.difficulty === 'middle' ? 'bg-accent-50 text-accent-700' :
+                          'bg-emerald-50 text-emerald-700'}`}>
+                        {{ junior: '初级', middle: '中级', senior: '高级', expert: '专家' }[s.difficulty] || s.difficulty}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3.5 text-xs text-slate-500">
+                      {{ text: '💬 文本', voice: '🎙️ 语音', video: '📹 视频' }[s.mode] || s.mode}
+                    </td>
+                    <td className="px-4 py-3.5 text-sm text-slate-600">{s.questionCount} 题</td>
+                    <td className="px-4 py-3.5">
+                      <span className={`px-2 py-0.5 rounded-lg text-xs font-semibold
+                        ${s.status === 'pending' ? 'bg-amber-50 text-amber-700' :
+                          s.status === 'in_progress' ? 'bg-emerald-50 text-emerald-700' :
+                          s.status === 'completed' ? 'bg-accent-50 text-accent-700' :
+                          'bg-slate-50 text-slate-500'}`}>
+                        {{ pending: '待加入', in_progress: '进行中', completed: '已完成', interrupted: '已中断', cancelled: '已取消' }[s.status] || s.status}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3.5 text-xs text-slate-400">{s.createdAt?.slice(0, 16)?.replace('T', ' ') || '-'}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+      </div> {/* end grid */}
     </div>
   );
 }

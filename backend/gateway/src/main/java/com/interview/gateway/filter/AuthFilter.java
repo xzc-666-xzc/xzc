@@ -32,7 +32,8 @@ public class AuthFilter implements GlobalFilter, Ordered {
     );
 
     private static final List<String> WHITE_PREFIXES = List.of(
-            "/api/ai/asr-token"
+            "/api/ai/asr-token",
+            "/api/interviews/video/room/validate"
     );
 
     public AuthFilter(JwtUtil jwtUtil) {

@@ -38,6 +38,8 @@ CREATE TABLE IF NOT EXISTS t_interview (
     question_count      INT         NOT NULL DEFAULT 8 COMMENT '题目数量',
     status              VARCHAR(32) NOT NULL DEFAULT 'pending' COMMENT 'pending/in_progress/completed/interrupted/cancelled',
     current_question_index INT      NOT NULL DEFAULT 0 COMMENT '当前题目索引',
+    code                VARCHAR(6)  DEFAULT NULL COMMENT '面试邀请码(6位数字)',
+    created_by          BIGINT      DEFAULT NULL COMMENT '创建人ID(HR)',
     score               INT         DEFAULT NULL COMMENT '总得分',
     summary             TEXT        DEFAULT NULL COMMENT '面试总结',
     started_at          DATETIME    DEFAULT NULL COMMENT '开始时间',
@@ -46,7 +48,9 @@ CREATE TABLE IF NOT EXISTS t_interview (
     updated_at          DATETIME    NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
     INDEX idx_user_id (user_id),
     INDEX idx_status (status),
-    INDEX idx_created_at (created_at)
+    INDEX idx_created_at (created_at),
+    UNIQUE INDEX idx_code (code),
+    INDEX idx_created_by (created_by)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='面试记录表';
 
 -- 题目表

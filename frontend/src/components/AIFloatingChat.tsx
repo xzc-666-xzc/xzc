@@ -13,16 +13,25 @@ interface AIFloatingChatProps {
   context?: { position?: string; score?: number };
 }
 
+const VIDEO_WELCOME = '🎥 欢迎进入视频面试！我是小空 🤖\n\n以下是一些对你有帮助的内容：\n• "给我一个自我介绍模板"\n• "自我介绍应该包含哪些内容？"\n• "面试中如何保持自信表达？"\n• "视频面试有什么注意事项？"\n• "帮我分析这道题的答题思路"';
+
+const DEFAULT_WELCOME = '你好！我是小空 🤖 你的 AI 面试教练。可以问我任何面试相关的问题，比如：\n• "我适合什么岗位？"\n• "面试准备技巧有哪些？"\n• "帮我分析 Java 面试重点"';
+
+const isVideo = (c?: AIFloatingChatProps['context']) => c?.position === 'video';
+
 export default function AIFloatingChat({ context }: AIFloatingChatProps) {
   const [open, setOpen] = useState(false);
   const [input, setInput] = useState('');
   const [messages, setMessages] = useState<Message[]>([
     {
       role: 'ai',
-      text: '你好！我是小空 🤖 你的 AI 面试教练。可以问我任何面试相关的问题，比如：\n• "我适合什么岗位？"\n• "面试准备技巧有哪些？"\n• "帮我分析 Java 面试重点"',
+      text: isVideo(context) ? VIDEO_WELCOME : DEFAULT_WELCOME,
       time: formatTime(new Date()),
     },
   ]);
+  const video = isVideo(context);
+  const btnBottom = video ? 'bottom-24' : 'bottom-6';
+  const panelBottom = video ? 'bottom-40' : 'bottom-24';
   const [unread, setUnread] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
@@ -73,9 +82,9 @@ export default function AIFloatingChat({ context }: AIFloatingChatProps) {
       {/* Floating button */}
       <button
         onClick={() => setOpen(!open)}
-        className="fixed bottom-6 right-6 z-50 w-14 h-14 rounded-2xl bg-gradient-to-br from-indigo-600 to-purple-600
+        className={`fixed ${btnBottom} right-6 z-50 w-14 h-14 rounded-2xl bg-gradient-to-br from-indigo-600 to-purple-600
                    text-white shadow-lg shadow-indigo-500/30 hover:shadow-xl hover:shadow-indigo-500/40
-                   hover:scale-105 active:scale-95 transition-all duration-200 flex items-center justify-center text-2xl"
+                   hover:scale-105 active:scale-95 transition-all duration-200 flex items-center justify-center text-2xl`}
         title="AI 面试教练 · 小空"
       >
         🤖
@@ -87,8 +96,8 @@ export default function AIFloatingChat({ context }: AIFloatingChatProps) {
 
       {/* Chat window */}
       {open && (
-        <div className="fixed bottom-24 right-6 z-50 w-[380px] max-w-[calc(100vw-3rem)] h-[520px] max-h-[calc(100vh-8rem)]
-                        bg-white rounded-2xl shadow-2xl border border-slate-200 flex flex-col overflow-hidden animate-scale-in">
+        <div className={`fixed ${panelBottom} right-6 z-50 w-[380px] max-w-[calc(100vw-3rem)] h-[520px] max-h-[calc(100vh-8rem)]
+                        bg-white rounded-2xl shadow-2xl border border-slate-200 flex flex-col overflow-hidden animate-scale-in`}>
           {/* Header */}
           <div className="p-4 border-b border-slate-100 flex items-center justify-between bg-gradient-to-r from-indigo-50 via-white to-purple-50 shrink-0">
             <div className="flex items-center gap-2.5">

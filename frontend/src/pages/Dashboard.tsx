@@ -1,10 +1,12 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useUserStore } from '@/stores';
+import { useUserStore, useInterviewStore } from '@/stores';
 import { interviewService, positionService } from '@/services/api';
-import { MOCK_POSITIONS, MOCK_INTERVIEWS } from '@/data/mock';
+import { MOCK_POSITIONS } from '@/data/mock';
+import { NEW_FEATURE_KEY } from '@/config/features';
 import { generateCoachSuggestions, getGreeting } from '@/data/aiEngine';
 import { aiChatStore } from '@/stores/aiChatStore';
+import type { InterviewConfig, Difficulty, InterviewMode, InterviewType } from '@/types';
 
 interface InterviewRecord {
   id: string; positionName: string; difficulty: string; mode: string;
@@ -20,72 +22,6 @@ const posIcons: Record<string, string> = {
   'Java后端开发': '☕', '前端开发': '⚛️', '产品经理': '📱', 'HR-通用面试': '🤝',
   'Go后端开发': '🔷', '测试开发': '🧪', 'JavaAgent开发工程师': '🔧',
 };
-
-const highlights = [
-  {
-    title: 'AI 模拟面试',
-    desc: '5 维度智能评分 · 实时追问 · 全真模拟',
-    gradient: 'from-indigo-500 to-purple-600',
-    bgLight: 'bg-indigo-50',
-    icon: (
-      <svg viewBox="0 0 24 24" fill="none" className="w-6 h-6">
-        <defs><linearGradient id="hg1" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stopColor="#6366f1"/><stop offset="100%" stopColor="#8b5cf6"/></linearGradient></defs>
-        <circle cx="12" cy="12" r="10" stroke="url(#hg1)" strokeWidth="1.8" fill="none"/>
-        <path d="M8 9.5c0-2.5 1.5-4 4-4s4 1.5 4 4c0 2-1 3.5-2.5 4v1.5" stroke="url(#hg1)" strokeWidth="1.8" strokeLinecap="round"/>
-        <circle cx="12" cy="17.5" r="0.8" fill="url(#hg1)"/>
-      </svg>
-    ),
-  },
-  {
-    title: '多模态交互',
-    desc: '文字 · 语音 · 视频三种模式自由切换',
-    gradient: 'from-emerald-500 to-teal-600',
-    bgLight: 'bg-emerald-50',
-    icon: (
-      <svg viewBox="0 0 24 24" fill="none" className="w-6 h-6">
-        <defs><linearGradient id="hg2" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stopColor="#10b981"/><stop offset="100%" stopColor="#0d9488"/></linearGradient></defs>
-        <rect x="3" y="4" width="11" height="13" rx="2" stroke="url(#hg2)" strokeWidth="1.8"/>
-        <polygon points="17,7 21,10.5 17,14" fill="url(#hg2)"/>
-        <line x1="7" y1="9" x2="10" y2="9" stroke="url(#hg2)" strokeWidth="1.5" strokeLinecap="round"/>
-        <line x1="7" y1="12" x2="12" y2="12" stroke="url(#hg2)" strokeWidth="1.5" strokeLinecap="round"/>
-      </svg>
-    ),
-  },
-  {
-    title: '智能评测报告',
-    desc: '雷达图 · 逐题分析 · 错题自动收录',
-    gradient: 'from-amber-500 to-orange-600',
-    bgLight: 'bg-amber-50',
-    icon: (
-      <svg viewBox="0 0 24 24" fill="none" className="w-6 h-6">
-        <defs><linearGradient id="hg3" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stopColor="#f59e0b"/><stop offset="100%" stopColor="#ea580c"/></linearGradient></defs>
-        <rect x="3" y="3" width="8" height="8" rx="1.5" stroke="url(#hg3)" strokeWidth="1.8"/>
-        <rect x="13" y="3" width="8" height="8" rx="1.5" stroke="url(#hg3)" strokeWidth="1.8"/>
-        <rect x="3" y="13" width="8" height="8" rx="1.5" stroke="url(#hg3)" strokeWidth="1.8"/>
-        <rect x="13" y="13" width="8" height="8" rx="1.5" stroke="url(#hg3)" strokeWidth="1.8"/>
-        <line x1="7" y1="7" x2="7" y2="7" stroke="url(#hg3)" strokeWidth="2" strokeLinecap="round"/>
-        <line x1="7" y1="17" x2="7" y2="17" stroke="url(#hg3)" strokeWidth="2" strokeLinecap="round"/>
-      </svg>
-    ),
-  },
-  {
-    title: '竞技排行榜',
-    desc: '万人同台竞技 · 数据驱动成长',
-    gradient: 'from-rose-500 to-pink-600',
-    bgLight: 'bg-rose-50',
-    icon: (
-      <svg viewBox="0 0 24 24" fill="none" className="w-6 h-6">
-        <defs><linearGradient id="hg4" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stopColor="#f43f5e"/><stop offset="100%" stopColor="#ec4899"/></linearGradient></defs>
-        <path d="M6 9H4.5a2.5 2.5 0 010-5C7 4 7 4 7 4" stroke="url(#hg4)" strokeWidth="1.8" strokeLinecap="round"/>
-        <path d="M18 9h1.5a2.5 2.5 0 000-5C17 4 17 4 17 4" stroke="url(#hg4)" strokeWidth="1.8" strokeLinecap="round"/>
-        <path d="M4 22h16" stroke="url(#hg4)" strokeWidth="1.8" strokeLinecap="round"/>
-        <path d="M10 14.7V17c0 .55-.47.98-.97 1.2C7.85 18.8 7 20.2 7 22" stroke="url(#hg4)" strokeWidth="1.8" strokeLinecap="round"/>
-        <path d="M14 14.7V17c0 .55.47.98.97 1.2C16.15 18.8 17 20.2 17 22" stroke="url(#hg4)" strokeWidth="1.8" strokeLinecap="round"/>
-        <path d="M18 2H6v7a6 6 0 0012 0V2Z" fill="url(#hg4)" fillOpacity="0.15" stroke="url(#hg4)" strokeWidth="1.8"/>
-      </svg>
-    ),
-  },
-];
 
 export default function Dashboard() {
   const navigate = useNavigate();
@@ -109,9 +45,48 @@ export default function Dashboard() {
       const p = posRes.data?.data as PositionItem[] | undefined;
       if (p) setPositions(p);
     } catch {
-      setRecentInterviews(MOCK_INTERVIEWS);
+      setRecentInterviews([]);
       setPositions(MOCK_POSITIONS);
     } finally { setLoading(false); }
+  };
+
+  const handleJoinByCode = async () => {
+    if (!joinCode.trim()) return;
+    try {
+      const res = await interviewService.joinByCode(joinCode.trim());
+      const data = res.data?.data;
+      if (!data?.interviewId) throw new Error('无效的面试码');
+      const config: InterviewConfig = {
+        positionId: data.positionId,
+        positionName: data.positionName,
+        difficulty: data.difficulty as Difficulty,
+        mode: data.mode as InterviewMode,
+        type: data.type as InterviewType,
+        questionCount: data.questionCount,
+        duration: data.duration,
+      };
+      // 视频面试 → 创建房间并跳转视频页面
+      if (data.mode === 'video') {
+        const roomRes = await fetch('/api/interviews/video/room/create', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${localStorage.getItem('token')}` },
+          body: JSON.stringify({ positionId: data.positionId, positionName: data.positionName, difficulty: data.difficulty, type: data.type, questionCount: data.questionCount }),
+        });
+        const roomData = await roomRes.json();
+        if (roomData.data?.roomId) {
+          navigate(`/interview/video/${roomData.data.roomId}`);
+        } else {
+          alert('创建视频房间失败，请重试');
+        }
+        return;
+      }
+      const { setConfig, setStatus } = useInterviewStore.getState();
+      setConfig(config);
+      setStatus('in_progress');
+      navigate(`/interview/${data.interviewId}`);
+    } catch {
+      alert('面试码无效或已失效，请检查后重试');
+    }
   };
 
   const completed = useMemo(() => recentInterviews.filter(r => r.status === 'completed' && r.score != null), [recentInterviews]);
@@ -173,42 +148,85 @@ export default function Dashboard() {
               ))}
             </div>
           </div>
-          <button onClick={() => navigate('/setup')}
-            className="shrink-0 bg-white text-accent-700 px-5 py-2.5 rounded-xl font-bold text-sm
-                       hover:bg-slate-50 active:scale-95 transition-all flex items-center gap-2 shadow-lg self-start">
-            <svg viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4"><polygon points="5,3 19,12 5,21" /></svg>
-            开始新面试
-          </button>
         </div>
       </div>
 
-      {/* ========== 2. 四模块功能入口（横条） ========== */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
-        {highlights.map(h => (
-          <button key={h.title}
-            onClick={() => {
-              if (h.title.includes('模拟')) navigate('/setup');
-              else if (h.title.includes('模态')) navigate('/setup');
-              else if (h.title.includes('评测')) navigate('/reports');
-              else navigate('/leaderboard');
-            }}
-            className="card p-4 card-hover group text-left flex flex-col gap-3 cursor-pointer"
-          >
-            <div className={`w-10 h-10 rounded-xl ${h.bgLight} flex items-center justify-center group-hover:scale-110 transition-transform duration-300`}>
-              {h.icon}
+      {/* ========== 2. 核心入口：AI面试 | 面试码 | 快捷入口 ========== */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-5">
+        {/* 左：AI模拟面试 Hero（占2份） */}
+        <button onClick={() => navigate('/setup')}
+          className="lg:col-span-2 relative overflow-hidden bg-gradient-to-br from-accent-600 via-accent-700 to-brand-700 rounded-2xl p-6 md:p-7 text-white shadow-card-elevated group cursor-pointer
+                     hover:shadow-glow transition-all duration-300 active:scale-[0.985]">
+          <div className="absolute top-0 right-0 w-48 h-48 bg-white/[0.06] rounded-full -translate-y-1/2 translate-x-1/4 blur-3xl group-hover:bg-white/[0.1] transition-colors" />
+          <div className="absolute bottom-0 left-0 w-32 h-32 bg-brand-400/[0.08] rounded-full translate-y-1/3 -translate-x-1/4 blur-3xl" />
+          <div className="relative flex items-center gap-5">
+            <div className="w-14 h-14 rounded-2xl bg-white/15 backdrop-blur flex items-center justify-center shrink-0
+                          group-hover:scale-110 group-hover:bg-white/20 transition-all duration-300 shadow-lg">
+              <svg viewBox="0 0 24 24" fill="none" className="w-7 h-7">
+                <circle cx="12" cy="12" r="10" stroke="white" strokeWidth="1.8" fill="none" opacity="0.9"/>
+                <polygon points="10,8 16,12 10,16" fill="white"/>
+              </svg>
             </div>
-            <div>
-              <h3 className="font-semibold text-sm text-ink-primary mb-0.5">{h.title}</h3>
-              <p className="text-[11px] text-ink-muted leading-relaxed">{h.desc}</p>
+            <div className="text-left">
+              <h2 className="text-xl md:text-2xl font-extrabold tracking-tight mb-1.5">AI 模拟面试</h2>
+              <p className="text-white/65 text-sm leading-relaxed mb-4">
+                多维度智能评分 · 语音文字双模式 · 精准岗位匹配 · 实时追问
+              </p>
+              <span className="inline-flex items-center gap-2 bg-white text-accent-700 px-4 py-2 rounded-xl font-bold text-sm
+                               group-hover:bg-slate-50 group-hover:shadow-lg transition-all">
+                <svg viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4"><polygon points="5,3 19,12 5,21" /></svg>
+                立即开始面试
+              </span>
             </div>
-          </button>
-        ))}
+          </div>
+        </button>
+
+        {/* 右：面试码 + 快捷入口 */}
+        <div className="space-y-4">
+          {/* 面试码卡片 */}
+          <div className="card p-4 relative overflow-hidden">
+            <div className="absolute top-0 right-0">
+              {(NEW_FEATURE_KEY as string) === 'invite-code' && (
+                <span className="px-2 py-0.5 bg-rose-500 text-white text-[10px] font-extrabold rounded-bl-lg rounded-tr-xl leading-none shadow-sm">🔥 新功能</span>
+              )}
+            </div>
+            <h3 className="text-sm font-bold text-ink-primary mb-1 mt-1">面试码加入</h3>
+            <p className="text-[11px] text-ink-muted mb-3">输入HR分享的6位邀请码，进入专属面试</p>
+            <input value={joinCode} onChange={e => setJoinCode(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && handleJoinByCode()}
+              placeholder="输入 6 位面试码"
+              maxLength={6}
+              className="w-full input-focus border-2 border-warmBorder-light rounded-xl px-3.5 py-2.5 text-base font-mono tracking-[0.2em] text-center
+                         bg-warm-alt placeholder:text-ink-muted focus:border-teal-400 focus:ring-2 focus:ring-teal-100 transition-all" />
+            <button onClick={handleJoinByCode} disabled={!joinCode.trim()}
+              className="w-full mt-3 py-2.5 rounded-xl bg-gradient-to-r from-teal-500 to-emerald-600 text-white font-bold text-sm
+                         hover:from-teal-600 hover:to-emerald-700 disabled:opacity-40 disabled:cursor-not-allowed
+                         active:scale-[0.98] transition-all duration-200 shadow-button">
+              加入专属面试
+            </button>
+          </div>
+
+          {/* 快捷入口：面试报告 + 排行榜 + AI教练 */}
+          <div className="grid grid-cols-3 gap-2">
+            {[
+              { icon: '📊', label: '面试报告', href: '/reports' },
+              { icon: '🏆', label: '排行榜', href: '/leaderboard' },
+              { icon: '💬', label: 'AI 教练', action: () => aiChatStore.open() },
+            ].map(btn => (
+              <button key={btn.label} onClick={() => btn.action ? btn.action() : navigate(btn.href)}
+                className="card p-3 flex flex-col items-center gap-1.5 card-hover group cursor-pointer">
+                <span className="text-xl group-hover:scale-110 transition-transform duration-200">{btn.icon}</span>
+                <span className="text-[10px] font-medium text-ink-secondary">{btn.label}</span>
+              </button>
+            ))}
+          </div>
+        </div>
       </div>
 
-      {/* ========== 3. 三栏：时间线 | AI教练+快捷面板 ========== */}
+      {/* ========== 3. 时间线 | AI教练 ========== */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
-        {/* 左：时间线（占2份） */}
-        <div className="lg:col-span-2 card overflow-hidden flex flex-col max-h-[520px]">
+        {/* 左：时间线 */}
+        <div className="lg:col-span-2 card overflow-hidden flex flex-col max-h-[460px]">
           <div className="flex items-center justify-between px-5 py-3.5 border-b border-warmBorder-light shrink-0">
             <h3 className="font-semibold text-sm text-ink-primary flex items-center gap-2.5">
               <span className="w-1.5 h-4 rounded-full bg-accent-500" />最近面试动态
@@ -241,12 +259,11 @@ export default function Dashboard() {
                   </div>
                   <div className="space-y-1.5">
                     {items.map(item => (
-                      <div key={item.id}
-                        onClick={() => {
+                      <div key={item.id} onClick={() => {
                           if (item.status === 'completed' && item.score != null) navigate(`/report/${item.id}`);
                           else if (item.status === 'interrupted' || item.status === 'in_progress') navigate(`/interview/${item.id}`);
                         }}
-                        className="card-clickable bg-warm-alt/80 rounded-lg px-3.5 py-2.5 border border-transparent flex items-center justify-between gap-3"
+                        className="card-clickable bg-warm-alt/80 rounded-lg px-3.5 py-2.5 border border-transparent flex items-center justify-between gap-3 cursor-pointer"
                       >
                         <div className="flex items-center gap-2.5 min-w-0">
                           <span className="text-sm shrink-0">{posIcons[item.positionName] || '💼'}</span>
@@ -260,15 +277,9 @@ export default function Dashboard() {
                         </div>
                         <div className="flex items-center gap-2 shrink-0">
                           {item.status === 'completed' && item.score != null && (
-                            <span className={`text-sm font-bold tabular-nums ${
-                              item.score >= 80 ? 'text-emerald-600' : item.score >= 60 ? 'text-amber-600' : 'text-rose-600'
-                            }`}>{item.score}分</span>
+                            <span className={`text-sm font-bold tabular-nums ${item.score >= 80 ? 'text-emerald-600' : item.score >= 60 ? 'text-amber-600' : 'text-rose-600'}`}>{item.score}分</span>
                           )}
-                          <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded ${
-                            item.status === 'completed' ? 'bg-emerald-50 text-emerald-600' :
-                            item.status === 'interrupted' ? 'bg-orange-50 text-orange-600' :
-                            'bg-accent-50 text-accent-600'
-                          }`}>
+                          <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded ${item.status === 'completed' ? 'bg-emerald-50 text-emerald-600' : item.status === 'interrupted' ? 'bg-orange-50 text-orange-600' : 'bg-accent-50 text-accent-600'}`}>
                             {item.status === 'completed' ? '已完成' : item.status === 'interrupted' ? '未完成' : '进行中'}
                           </span>
                         </div>
@@ -281,9 +292,8 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* 右：AI教练 + 快捷面板 */}
+        {/* 右：AI教练 + 热门岗位 */}
         <div className="space-y-4">
-          {/* AI 教练小空 */}
           <div className="card p-4">
             <div className="flex items-center gap-2.5 mb-3">
               <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-base shadow-sm">🤖</div>
@@ -300,13 +310,11 @@ export default function Dashboard() {
                 </p>
                 <div className="flex gap-1.5">
                   <button onClick={() => navigate(coachSuggestion.action.href)}
-                    className="px-3 py-1.5 bg-gradient-to-r from-indigo-600 to-indigo-700 text-white text-[11px] font-semibold rounded-lg
-                               hover:from-indigo-700 hover:to-indigo-800 active:scale-95 transition-all">
+                    className="px-3 py-1.5 bg-gradient-to-r from-indigo-600 to-indigo-700 text-white text-[11px] font-semibold rounded-lg hover:from-indigo-700 hover:to-indigo-800 active:scale-95 transition-all">
                     {coachSuggestion.action.label}
                   </button>
                   <button onClick={() => aiChatStore.open()}
-                    className="px-3 py-1.5 border border-warmBorder-light text-ink-secondary text-[11px] font-medium rounded-lg
-                               hover:bg-warm-hover active:scale-95 transition-all">💬 问小空</button>
+                    className="px-3 py-1.5 border border-warmBorder-light text-ink-secondary text-[11px] font-medium rounded-lg hover:bg-warm-hover active:scale-95 transition-all">💬 问小空</button>
                 </div>
               </>
             ) : (
@@ -315,55 +323,25 @@ export default function Dashboard() {
               </p>
             )}
           </div>
-
-          {/* 快捷操作 + 热门岗位 */}
-          <div className="card p-4">
-            <h3 className="text-xs font-semibold text-ink-primary mb-3 flex items-center gap-2">
-              <span className="w-1 h-3 rounded-full bg-accent-500" />快捷操作
+          <div className="card p-3">
+            <h3 className="text-xs font-semibold text-ink-primary mb-2 flex items-center gap-1.5">
+              <span className="w-1 h-2.5 rounded-full bg-brand-500" />热门岗位
             </h3>
-            <div className="grid grid-cols-2 gap-2 mb-3">
-              {[
-                { icon: '▶️', label: '开始面试', href: '/setup' },
-                { icon: '📊', label: '面试报告', href: '/reports' },
-                { icon: '🎯', label: '薄弱练习', href: '/reports' },
-                { icon: '🏆', label: '排行榜', href: '/leaderboard' },
-              ].map(btn => (
-                <button key={btn.label} onClick={() => navigate(btn.href)}
-                  className="flex items-center gap-2 p-2.5 rounded-lg border border-warmBorder-light
-                             hover:bg-warm-hover active:scale-[0.97] transition-all duration-200 group">
-                  <span className="text-base shrink-0 group-hover:scale-110 transition-transform duration-200">{btn.icon}</span>
-                  <span className="text-[11px] font-medium text-ink-secondary">{btn.label}</span>
+            <div className="space-y-0.5">
+              {(positions.length > 0 ? positions.slice(0, 5) : MOCK_POSITIONS.slice(0, 5)).map((pos, idx) => (
+                <button key={pos.id} onClick={() => navigate('/setup')}
+                  className="w-full text-left p-2 rounded-lg hover:bg-warm-hover transition-all duration-200 flex items-center gap-2.5 group active:scale-[0.985]">
+                  <span className="text-xs shrink-0">{posIcons[pos.name] || '💼'}</span>
+                  <span className="text-[11px] font-medium text-ink-primary group-hover:text-accent-700 transition-colors truncate flex-1">{pos.name}</span>
+                  {pos.hot && <span className="px-1.5 py-0.5 bg-rose-50 text-rose-500 rounded text-[9px] font-bold">HOT</span>}
+                  <span className="text-[10px] text-ink-muted font-mono">{idx + 1}</span>
                 </button>
               ))}
-            </div>
-            <div className="flex gap-2 mb-3">
-              <input value={joinCode} onChange={e => setJoinCode(e.target.value)}
-                placeholder="输入面试码加入"
-                className="flex-1 input-focus border border-warmBorder-light rounded-lg px-2.5 py-1.5 text-xs bg-warm-alt placeholder:text-ink-muted" />
-              <button disabled={!joinCode.trim()}
-                className="bg-teal-500 text-white px-3 py-1.5 rounded-lg font-semibold text-xs
-                           hover:bg-teal-600 disabled:opacity-40 disabled:cursor-not-allowed active:scale-95 transition-all">加入</button>
-            </div>
-            <div className="pt-3 border-t border-warmBorder-light">
-              <h3 className="text-xs font-semibold text-ink-primary mb-2 flex items-center gap-2">
-                <span className="w-1 h-3 rounded-full bg-brand-500" />热门岗位
-              </h3>
-              <div className="space-y-0.5">
-                {(positions.length > 0 ? positions.slice(0, 4) : MOCK_POSITIONS.slice(0, 4)).map((pos, idx) => (
-                  <button key={pos.id} onClick={() => navigate('/setup')}
-                    className="w-full text-left p-2 rounded-lg hover:bg-warm-hover transition-all duration-200
-                               flex items-center gap-2.5 group active:scale-[0.985]">
-                    <span className="text-sm shrink-0">{posIcons[pos.name] || '💼'}</span>
-                    <span className="text-xs font-medium text-ink-primary group-hover:text-accent-700 transition-colors truncate flex-1">{pos.name}</span>
-                    {pos.hot && <span className="px-1.5 py-0.5 bg-rose-50 text-rose-500 rounded text-[9px] font-bold">HOT</span>}
-                    <span className="text-[10px] text-ink-muted font-mono">{idx + 1}</span>
-                  </button>
-                ))}
-              </div>
             </div>
           </div>
         </div>
       </div>
+
     </div>
   );
 }

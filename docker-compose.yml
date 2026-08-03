@@ -72,6 +72,7 @@ services:
       - SPRING_DATASOURCE_PASSWORD=123456
       - SPRING_DATA_REDIS_HOST=redis
       - SPRING_DATA_REDIS_PORT=6379
+      - SPRING_FLYWAY_VALIDATE_ON_MIGRATE=false
     networks:
       - interview-network
 
