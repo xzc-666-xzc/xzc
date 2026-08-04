@@ -21,7 +21,7 @@ const TYPE_CFG: Record<string, { label: string; icon: string }> = {
   BUG_REPORT: { label: 'BUG上报', icon: '🟣' },
 };
 
-export default function AgentDashboard() {
+export default function AgentDashboard({ onBack }: { onBack: () => void }) {
   const user = useUserStore(s => s.user);
   const isAdmin = user?.role === 'admin' || user?.role === 'hr' || user?.role === 'teacher';
 
@@ -135,6 +135,12 @@ export default function AgentDashboard() {
       {/* ===== Top Status Bar ===== */}
       <div className="flex items-center justify-between px-4 py-2 bg-white border-b border-slate-100 shrink-0">
         <div className="flex items-center gap-4">
+          <button onClick={onBack}
+            className="flex items-center gap-1 px-2 py-1 text-xs text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors"
+            title="返回管理主界面">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4"><polyline points="15 18 9 12 15 6"/></svg>
+            返回
+          </button>
           <button
             onClick={() => setOnlineStatus(s => s === 'online' ? 'busy' : 'online')}
             className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-bold transition-all ${

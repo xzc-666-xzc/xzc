@@ -73,7 +73,7 @@ export default function AdminPanel() {
   const roleInfo = roleTitles[userRole] || roleTitles.admin;
 
   // Agent dashboard uses full-screen layout
-  if (activeTab === 'agent') return <AgentDashboard />;
+  if (activeTab === 'agent') return <AgentDashboard onBack={() => setActiveTab('overview')} />;
 
   return (
     <div className="page-container animate-fade-in">
