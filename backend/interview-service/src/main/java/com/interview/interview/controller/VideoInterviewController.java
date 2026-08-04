@@ -265,6 +265,7 @@ public class VideoInterviewController {
                     answerMapper.insert(a);
 
                     // Evaluation (5维度，基于单题得分生成有意义的值)
+                    Random rnd = new Random();
                     int qScore = qa.getScore() != null ? qa.getScore() : 50;
                     Evaluation e = new Evaluation();
                     e.setAnswerId(a.getId());
