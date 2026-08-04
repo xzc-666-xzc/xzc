@@ -49,8 +49,8 @@ export const userService = {
   login: (data: { username: string; password: string }) =>
     http.post<ApiResponse<{ token: string; user: unknown }>>('/user/login', data),
 
-  register: (data: { username: string; displayName: string; password: string; email: string; role: string }) =>
-    http.post<ApiResponse<{ token?: string; user?: unknown; pending?: boolean; message?: string }>>('/user/register', data),
+  register: (data: { username: string; password: string; email: string; role: string }) =>
+    http.post<ApiResponse<{ token: string; user: unknown }>>('/user/register', data),
 
   checkAccount: (username: string) =>
     http.get<ApiResponse<{ exists: boolean }>>('/user/check-username', { params: { username } }),
@@ -63,31 +63,12 @@ export const userService = {
 
   getLeaderboard: () =>
     http.get<ApiResponse<LeaderboardEntry[]>>('/user/leaderboard'),
-
-  // 管理员审批
-  getPendingUsers: () =>
-    http.get<ApiResponse<PendingUser[]>>('/user/admin/pending-users'),
-
-  approveUser: (id: string) =>
-    http.post<ApiResponse<void>>(`/user/admin/users/${id}/approve`),
-
-  rejectUser: (id: string) =>
-    http.post<ApiResponse<void>>(`/user/admin/users/${id}/reject`),
 };
 
 export interface LeaderboardEntry {
   username: string;
   interviewCount: number;
   avgScore: number;
-}
-
-export interface PendingUser {
-  id: string;
-  username: string;
-  displayName: string;
-  email: string;
-  role: string;
-  createdAt: string;
 }
 
 // ==================== 岗位服务 ====================

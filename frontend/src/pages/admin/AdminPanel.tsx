@@ -6,9 +6,8 @@ import { userService, interviewService, positionService } from '@/services/api';
 import { questionBanks } from '@/data/questions';
 import type { PositionBank, QuestionTemplate } from '@/data/questions';
 import type { InterviewTemplate, Difficulty, InterviewMode, InterviewType } from '@/types';
-import UserApproval from './UserApproval';
 
-type Tab = 'overview' | 'users' | 'approval' | 'questions' | 'monitor' | 'create';
+type Tab = 'overview' | 'users' | 'questions' | 'monitor' | 'create';
 
 const SYSTEM_USERS_FALLBACK = [
   { id: '1', username: 'Gxzc', email: 'Gxzc@interview.com', role: 'admin', totalInterviews: 0, avgScore: 0, createdAt: '2026-01-01' },
@@ -49,7 +48,6 @@ const roleLabels: Record<string, { label: string; color: string }> = {
 const allTabs: { key: Tab; label: string; icon: JSX.Element; roles: string[] }[] = [
   { key: 'overview', label: '数据概览', icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>, roles: ['admin'] },
   { key: 'users', label: '用户管理', icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>, roles: ['admin'] },
-  { key: 'approval', label: '用户审批', icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4"><path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="10"/></svg>, roles: ['admin'] },
   { key: 'questions', label: '题库管理', icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>, roles: ['admin', 'hr', 'teacher'] },
   { key: 'monitor', label: '面试监控', icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>, roles: ['admin', 'hr'] },
   { key: 'create', label: '创建面试', icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4"><path d="M12 5v14M5 12h14"/></svg>, roles: ['admin', 'hr'] },
@@ -114,7 +112,6 @@ export default function AdminPanel() {
       {/* Content */}
       {activeTab === 'overview' && <OverviewTab />}
       {activeTab === 'users' && <UsersTab />}
-      {activeTab === 'approval' && <UserApproval />}
       {activeTab === 'questions' && <QuestionsTab />}
       {activeTab === 'monitor' && <MonitorTab />}
       {activeTab === 'create' && <CreateInterviewTab />}
