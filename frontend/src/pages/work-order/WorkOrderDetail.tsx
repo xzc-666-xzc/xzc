@@ -165,8 +165,9 @@ export default function WorkOrderDetail() {
   const typeCfg = TYPE_CONFIG[currentOrder.type as WorkOrderType] || { label: currentOrder.type, color: 'bg-slate-100' };
   const canSubmit = currentOrder.status === 'DRAFT' && !isAdmin;
   const isAssignee = currentOrder.assignee?.id === user?.id;
+  const isEscalated = currentOrder.escalatedTo?.id === user?.id;
   const canAccept = currentOrder.status === 'PENDING' && isAdmin;
-  const canResolve = currentOrder.status === 'PROCESSING' && isAdmin && isAssignee;
+  const canResolve = currentOrder.status === 'PROCESSING' && isAdmin && (isAssignee || isEscalated);
   const isOtherProcessing = currentOrder.status === 'PROCESSING' && isAdmin && !isAssignee;
   const canClose = (currentOrder.status === 'PENDING' && isAdmin) ||
                     currentOrder.status === 'PROCESSING' ||

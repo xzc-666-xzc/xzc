@@ -167,11 +167,12 @@ public class WorkOrderService {
 
         boolean isAdmin = "admin".equals(role) || "hr".equals(role) || "teacher".equals(role);
 
-        // 处理中的工单：非处理人的管理员不能查看
+        // 处理中的工单：非处理人/被转报人的管理员不能查看
         if (isAdmin && "PROCESSING".equals(order.getStatus())
             && order.getAssigneeId() != null
             && !userId.equals(order.getAssigneeId())
-            && !userId.equals(order.getSubmitterId())) {
+            && !userId.equals(order.getSubmitterId())
+            && !userId.equals(order.getEscalatedTo())) {
             throw new BusinessException(ResultCode.FORBIDDEN,
                 "该工单正在被 " + getAdminName(order.getAssigneeId()) + " 处理中，请等待处理完成");
         }
@@ -356,6 +357,12 @@ public class WorkOrderService {
 
         order.setEscalatedTo(escalatedTo);
         order.setEscalationNote(note);
+        // 转报同时将处理人变更为目标管理员
+        order.setAssigneeId(escalatedTo);
+        // 如果工单还在PENDING状态，自动转为PROCESSING
+        if ("PENDING".equals(order.getStatus())) {
+            order.setStatus("PROCESSING");
+        }
         workOrderMapper.updateById(order);
 
         notificationService.notifyUser(
