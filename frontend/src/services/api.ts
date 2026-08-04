@@ -223,6 +223,9 @@ export const workOrderService = {
   escalate: (id: string, escalatedTo: string, note: string) =>
     http.post<ApiResponse<{ id: string }>>(`/work-orders/${id}/escalate`, { escalatedTo, note }),
 
+  reassign: (id: string, assigneeId: string) =>
+    http.post<ApiResponse<{ id: string; assigneeId: string }>>(`/work-orders/${id}/reassign`, { assigneeId }),
+
   getMessages: (orderId: string, params?: { page?: number; pageSize?: number }) =>
     http.get<ApiResponse<import('@/types').PageData<import('@/types/workOrder').MessageVO>>>(`/work-orders/${orderId}/messages`, { params }),
 

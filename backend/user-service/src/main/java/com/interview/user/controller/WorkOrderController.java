@@ -74,6 +74,12 @@ public class WorkOrderController {
     }
 
     @Data
+    public static class ReassignRequest {
+        @NotNull(message = "新处理人ID不能为空")
+        private Long assigneeId;
+    }
+
+    @Data
     public static class ResolveRequest {
         @NotBlank(message = "解决说明不能为空")
         @Size(min = 5, max = 2000, message = "解决说明长度5-2000字符")
@@ -211,6 +217,23 @@ public class WorkOrderController {
         return R.ok(Map.of(
             "id", order.getId().toString(),
             "escalatedTo", order.getEscalatedTo().toString()
+        ));
+    }
+
+    @Operation(summary = "转派工单（管理员将处理中的工单转给其他管理员）")
+    @PostMapping("/{id}/reassign")
+    public R<Map<String, Object>> reassign(
+            HttpServletRequest request,
+            @PathVariable Long id,
+            @Valid @RequestBody ReassignRequest req) {
+        Long userId = authUtil.getUserId(request);
+        String role = authUtil.getRole(request);
+        WorkOrder order = workOrderService.reassignWorkOrder(
+            id, userId, role, req.getAssigneeId());
+        return R.ok(Map.of(
+            "id", order.getId().toString(),
+            "assigneeId", order.getAssigneeId() != null ? order.getAssigneeId().toString() : null,
+            "updatedAt", order.getUpdatedAt().toString()
         ));
     }
 

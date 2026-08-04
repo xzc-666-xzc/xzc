@@ -3,9 +3,11 @@ package com.interview.user.service;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.interview.common.entity.WorkOrder;
 import com.interview.common.entity.WorkOrderMessage;
 import com.interview.common.exception.BusinessException;
 import com.interview.common.result.ResultCode;
+import com.interview.user.mapper.WorkOrderMapper;
 import com.interview.user.mapper.WorkOrderMessageMapper;
 import com.interview.user.vo.MessageVO;
 import lombok.RequiredArgsConstructor;
@@ -19,9 +21,19 @@ import java.util.stream.Collectors;
 public class WorkOrderMessageService {
 
     private final WorkOrderMessageMapper messageMapper;
+    private final WorkOrderMapper workOrderMapper;
 
     public MessageVO sendMessage(Long orderId, Long senderId, String senderName,
                                   String senderRole, String content, String messageType) {
+        // 已解决/已关闭的工单不允许留言
+        WorkOrder order = workOrderMapper.selectById(orderId);
+        if (order == null) {
+            throw new BusinessException(ResultCode.NOT_FOUND, "工单不存在");
+        }
+        if ("RESOLVED".equals(order.getStatus()) || "CLOSED".equals(order.getStatus())) {
+            throw new BusinessException(ResultCode.BAD_REQUEST, "工单已解决或已关闭，无法继续留言");
+        }
+
         WorkOrderMessage msg = new WorkOrderMessage();
         msg.setOrderId(orderId);
         msg.setSenderId(senderId);
