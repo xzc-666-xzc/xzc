@@ -120,8 +120,10 @@ export default function WorkOrderDetail() {
       }
       fetchDetail();
       fetchMessages();
-    } catch { /* handled */ }
-    finally { setActionLoading(null); }
+    } catch (err: any) {
+      const msg = err?.response?.data?.message || err?.message || '操作失败';
+      alert(msg);
+    } finally { setActionLoading(null); }
   };
 
   if (loading) {
@@ -277,8 +279,8 @@ export default function WorkOrderDetail() {
                 </button>
                 {showEscalate && (
                   <div className="bg-slate-50 rounded-xl p-3 space-y-2">
-                    <input value={escalateTarget} onChange={(e) => setEscalateTarget(e.target.value)}
-                      placeholder="上级管理员ID" className="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm outline-none" />
+                    <input type="number" value={escalateTarget} onChange={(e) => setEscalateTarget(e.target.value)}
+                      placeholder="上级管理员ID（数字）" className="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm outline-none" />
                     <textarea value={escalateNote} onChange={(e) => setEscalateNote(e.target.value)}
                       placeholder="转报原因..." rows={2}
                       className="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm resize-none outline-none" />
