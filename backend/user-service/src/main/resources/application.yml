@@ -18,13 +18,24 @@ spring:
       port: 6379
   flyway:
     enabled: true
-    baseline-on-migrate: true          # 对已有数据库做基线，不会覆盖已有表
+    baseline-on-migrate: true
     baseline-version: 1
-    locations: classpath:db/migration  # 默认值，可省略
+    locations: classpath:db/migration
+  servlet:
+    multipart:
+      max-file-size: 100MB
+      max-request-size: 100MB
+
 mybatis-plus:
   configuration:
     log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
     map-underscore-to-camel-case: true
+
+# 文件上传配置
+app:
+  upload:
+    dir: ${UPLOAD_DIR:./uploads}
+    url-prefix: /api/files
 
 springdoc:
   swagger-ui:

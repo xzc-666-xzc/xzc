@@ -11,6 +11,9 @@ import InterviewReportHub from '@/pages/InterviewReportHub';
 import Leaderboard from '@/pages/Leaderboard';
 import Profile from '@/pages/Profile';
 import AdminPanel from '@/pages/admin/AdminPanel';
+import WorkOrderList from '@/pages/work-order/WorkOrderList';
+import WorkOrderCreate from '@/pages/work-order/WorkOrderCreate';
+import WorkOrderDetail from '@/pages/work-order/WorkOrderDetail';
 
 // 需要登录才能访问
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -52,6 +55,9 @@ export default function App() {
         <Route path="leaderboard" element={<Leaderboard />} />
         <Route path="profile" element={<Profile />} />
         <Route path="admin" element={<AdminPanel />} />
+        <Route path="work-orders" element={<WorkOrderList />} />
+        <Route path="work-orders/create" element={<WorkOrderCreate />} />
+        <Route path="work-orders/:id" element={<WorkOrderDetail />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

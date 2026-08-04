@@ -172,4 +172,67 @@ export const wrongBookService = {
     http.post<ApiResponse<unknown>>(`/wrong-book/${id}/review`),
 };
 
+// ==================== 工单服务 ====================
+export const workOrderService = {
+  create: (data: import('@/types/workOrder').CreateWorkOrderRequest) =>
+    http.post<ApiResponse<{ id: string; status: string; createdAt: string }>>('/work-orders', data),
+
+  list: (params?: { page?: number; pageSize?: number; status?: string; type?: string; keyword?: string }) =>
+    http.get<ApiResponse<import('@/types').PageData<import('@/types/workOrder').WorkOrderListVO>>>('/work-orders', { params }),
+
+  getDetail: (id: string) =>
+    http.get<ApiResponse<import('@/types/workOrder').WorkOrderDetailVO>>(`/work-orders/${id}`),
+
+  update: (id: string, data: import('@/types/workOrder').CreateWorkOrderRequest) =>
+    http.put<ApiResponse<void>>(`/work-orders/${id}`, data),
+
+  submit: (id: string) =>
+    http.post<ApiResponse<{ id: string; status: string }>>(`/work-orders/${id}/submit`),
+
+  accept: (id: string) =>
+    http.post<ApiResponse<{ id: string; status: string; assigneeId: string }>>(`/work-orders/${id}/accept`),
+
+  resolve: (id: string, resolution: string) =>
+    http.post<ApiResponse<{ id: string; status: string }>>(`/work-orders/${id}/resolve`, { resolution }),
+
+  close: (id: string) =>
+    http.post<ApiResponse<{ id: string; status: string }>>(`/work-orders/${id}/close`),
+
+  escalate: (id: string, escalatedTo: string, note: string) =>
+    http.post<ApiResponse<{ id: string }>>(`/work-orders/${id}/escalate`, { escalatedTo, note }),
+
+  getMessages: (orderId: string, params?: { page?: number; pageSize?: number }) =>
+    http.get<ApiResponse<import('@/types').PageData<import('@/types/workOrder').MessageVO>>>(`/work-orders/${orderId}/messages`, { params }),
+
+  sendMessage: (orderId: string, data: import('@/types/workOrder').SendMessageRequest) =>
+    http.post<ApiResponse<import('@/types/workOrder').MessageVO>>(`/work-orders/${orderId}/messages`, data),
+
+  uploadAttachment: (orderId: string, file: File) => {
+    const form = new FormData();
+    form.append('file', file);
+    return http.post<ApiResponse<import('@/types/workOrder').AttachmentVO>>(
+      `/work-orders/${orderId}/attachments`, form,
+      { headers: { 'Content-Type': 'multipart/form-data' }, timeout: 120000 }
+    );
+  },
+
+  deleteAttachment: (orderId: string, attId: string) =>
+    http.delete<ApiResponse<void>>(`/work-orders/${orderId}/attachments/${attId}`),
+};
+
+// ==================== 通知服务 ====================
+export const notificationService = {
+  getUnreadCount: () =>
+    http.get<ApiResponse<{ count: number }>>('/notifications/unread-count'),
+
+  list: (params?: { page?: number; pageSize?: number }) =>
+    http.get<ApiResponse<import('@/types').PageData<unknown>>>('/notifications', { params }),
+
+  markRead: (id: string) =>
+    http.put<ApiResponse<void>>(`/notifications/${id}/read`),
+
+  markAllRead: () =>
+    http.put<ApiResponse<void>>('/notifications/read-all'),
+};
+
 export default http;

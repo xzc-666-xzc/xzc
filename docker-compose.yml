@@ -73,6 +73,9 @@ services:
       - SPRING_DATA_REDIS_HOST=redis
       - SPRING_DATA_REDIS_PORT=6379
       - SPRING_FLYWAY_VALIDATE_ON_MIGRATE=false
+      - UPLOAD_DIR=/data/uploads
+    volumes:
+      - upload_data:/data/uploads
     networks:
       - interview-network
 
@@ -146,6 +149,7 @@ services:
 volumes:
   mysql_data:
   redis_data:
+  upload_data:
 
 networks:
   interview-network:
