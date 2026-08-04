@@ -45,7 +45,7 @@ public class WorkOrderService {
     public List<Map<String, Object>> getAdminList() {
         List<User> admins = userMapper.selectList(
                 new LambdaQueryWrapper<User>()
-                        .in(User::getRole, "admin", "hr", "teacher")
+                        .eq(User::getRole, "admin")
                         .eq(User::getStatus, 1)
         );
         List<Map<String, Object>> result = new ArrayList<>();
