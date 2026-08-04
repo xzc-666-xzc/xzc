@@ -112,7 +112,7 @@ export default function WorkOrderDetail() {
         }
         case 'reassign': {
           const res = await workOrderService.reassign(id, reassignTarget);
-          updateOrderStatus(id, currentOrder.status, { assigneeName: res.data.data.assigneeId });
+          if (currentOrder) updateOrderStatus(id, currentOrder.status, { assigneeName: res.data.data.assigneeId });
           setShowReassign(false);
           setReassignTarget('');
           break;
@@ -150,8 +150,8 @@ export default function WorkOrderDetail() {
                     currentOrder.status === 'PROCESSING' ||
                     currentOrder.status === 'RESOLVED';
   const canEscalate = (currentOrder.status === 'PENDING' || currentOrder.status === 'PROCESSING') && isAdmin;
-  const canReassign = currentOrder.status === 'PROCESSING' && isAdmin;
-  const canMessage = currentOrder.status !== 'RESOLVED' && currentOrder.status !== 'CLOSED';
+  const canReassign = currentOrder!.status === 'PROCESSING' && isAdmin;
+  const canMessage = currentOrder!.status !== 'RESOLVED' && currentOrder!.status !== 'CLOSED';
 
   return (
     <div className="h-[calc(100vh-4rem)] flex flex-col">
