@@ -6,8 +6,9 @@ import { userService, interviewService, positionService, workOrderService } from
 import { questionBanks } from '@/data/questions';
 import type { PositionBank, QuestionTemplate } from '@/data/questions';
 import type { InterviewTemplate, Difficulty, InterviewMode, InterviewType } from '@/types';
+import AgentDashboard from './AgentDashboard';
 
-type Tab = 'overview' | 'users' | 'questions' | 'monitor' | 'create';
+type Tab = 'overview' | 'users' | 'questions' | 'monitor' | 'create' | 'agent';
 
 const SYSTEM_USERS_FALLBACK = [
   { id: '1', username: 'Gxzc', email: 'Gxzc@interview.com', role: 'admin', totalInterviews: 0, avgScore: 0, createdAt: '2026-01-01' },
@@ -46,6 +47,7 @@ const roleLabels: Record<string, { label: string; color: string }> = {
 };
 
 const allTabs: { key: Tab; label: string; icon: JSX.Element; roles: string[] }[] = [
+  { key: 'agent', label: '工单客服', icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>, roles: ['admin', 'hr', 'teacher'] },
   { key: 'overview', label: '数据概览', icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>, roles: ['admin'] },
   { key: 'users', label: '用户管理', icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>, roles: ['admin'] },
   { key: 'questions', label: '题库管理', icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>, roles: ['admin', 'hr', 'teacher'] },
@@ -66,9 +68,12 @@ export default function AdminPanel() {
   const isAdmin = userRole === 'admin';
 
   const tabs = allTabs.filter(t => t.roles.includes(userRole));
-  const [activeTab, setActiveTab] = useState<Tab>(tabs[0]?.key || 'questions');
+  const [activeTab, setActiveTab] = useState<Tab>('agent');
 
   const roleInfo = roleTitles[userRole] || roleTitles.admin;
+
+  // Agent dashboard uses full-screen layout
+  if (activeTab === 'agent') return <AgentDashboard />;
 
   return (
     <div className="page-container animate-fade-in">
