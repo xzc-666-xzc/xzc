@@ -68,7 +68,7 @@ export default function AdminPanel() {
   const isAdmin = userRole === 'admin';
 
   const tabs = allTabs.filter(t => t.roles.includes(userRole));
-  const [activeTab, setActiveTab] = useState<Tab>(tabs[0]?.key || 'questions');
+  const [activeTab, setActiveTab] = useState<Tab>(userRole === 'admin' ? 'overview' : tabs[0]?.key || 'questions');
 
   const roleInfo = roleTitles[userRole] || roleTitles.admin;
 
