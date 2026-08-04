@@ -71,6 +71,13 @@ export interface LeaderboardEntry {
   avgScore: number;
 }
 
+export interface AdminBrief {
+  id: string;
+  username: string;
+  realName: string;
+  role: string;
+}
+
 export interface OngoingInterview {
   id: string;
   userId: string;
@@ -220,8 +227,11 @@ export const workOrderService = {
   close: (id: string) =>
     http.post<ApiResponse<{ id: string; status: string }>>(`/work-orders/${id}/close`),
 
-  escalate: (id: string, escalatedTo: string, note: string) =>
+  escalate: (id: string, escalatedTo: number, note: string) =>
     http.post<ApiResponse<{ id: string }>>(`/work-orders/${id}/escalate`, { escalatedTo, note }),
+
+  getAdminList: () =>
+    http.get<ApiResponse<AdminBrief[]>>('/work-orders/admin-list'),
 
   reassign: (id: string, assigneeId: string) =>
     http.post<ApiResponse<{ id: string; assigneeId: string }>>(`/work-orders/${id}/reassign`, { assigneeId }),

@@ -37,6 +37,29 @@ public class WorkOrderService {
     private final NotificationService notificationService;
     private final WorkOrderMessageService messageService;
 
+    // ==================== 管理员列表 ====================
+
+    /**
+     * 获取所有管理员列表（用于转报/转派下拉）
+     */
+    public List<Map<String, Object>> getAdminList() {
+        List<User> admins = userMapper.selectList(
+                new LambdaQueryWrapper<User>()
+                        .in(User::getRole, "admin", "hr", "teacher")
+                        .eq(User::getStatus, 1)
+        );
+        List<Map<String, Object>> result = new ArrayList<>();
+        for (User u : admins) {
+            result.add(Map.of(
+                    "id", u.getId().toString(),
+                    "username", u.getUsername(),
+                    "realName", u.getRealName() != null ? u.getRealName() : u.getUsername(),
+                    "role", u.getRole()
+            ));
+        }
+        return result;
+    }
+
     // ==================== 创建与查询 ====================
 
     @Transactional

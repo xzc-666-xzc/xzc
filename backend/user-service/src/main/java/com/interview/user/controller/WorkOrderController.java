@@ -86,6 +86,12 @@ public class WorkOrderController {
         private String resolution;
     }
 
+    @Operation(summary = "获取管理员列表（转报/转派下拉使用）")
+    @GetMapping("/admin-list")
+    public R<java.util.List<java.util.Map<String, Object>>> getAdminList() {
+        return R.ok(workOrderService.getAdminList());
+    }
+
     // ==================== CRUD 端点 ====================
 
     @Operation(summary = "创建工单（保存为草稿）")

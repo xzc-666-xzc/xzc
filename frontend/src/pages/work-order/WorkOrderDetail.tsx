@@ -24,6 +24,7 @@ export default function WorkOrderDetail() {
   const [showEscalate, setShowEscalate] = useState(false);
   const [escalateTarget, setEscalateTarget] = useState('');
   const [escalateNote, setEscalateNote] = useState('');
+  const [adminList, setAdminList] = useState<Array<{ id: string; username: string; realName: string; role: string }>>([]);
   const [showReassign, setShowReassign] = useState(false);
   const [reassignTarget, setReassignTarget] = useState('');
   const [showResolve, setShowResolve] = useState(false);
@@ -53,6 +54,14 @@ export default function WorkOrderDetail() {
   }, [id, setMessages, setMessagesLoading]);
 
   useEffect(() => { fetchDetail(); fetchMessages(); }, [fetchDetail, fetchMessages]);
+
+  useEffect(() => {
+    if (isAdmin) {
+      workOrderService.getAdminList().then(res => {
+        setAdminList((res.data?.data as any[]) || []);
+      }).catch(() => {});
+    }
+  }, [isAdmin]);
 
   // Poll messages every 10s
   useEffect(() => {
@@ -104,7 +113,7 @@ export default function WorkOrderDetail() {
           break;
         }
         case 'escalate': {
-          await workOrderService.escalate(id, escalateTarget, escalateNote);
+          await workOrderService.escalate(id, Number(escalateTarget), escalateNote);
           setShowEscalate(false);
           setEscalateTarget('');
           setEscalateNote('');
@@ -279,8 +288,13 @@ export default function WorkOrderDetail() {
                 </button>
                 {showEscalate && (
                   <div className="bg-slate-50 rounded-xl p-3 space-y-2">
-                    <input type="number" value={escalateTarget} onChange={(e) => setEscalateTarget(e.target.value)}
-                      placeholder="上级管理员ID（数字）" className="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm outline-none" />
+                    <select value={escalateTarget} onChange={(e) => setEscalateTarget(e.target.value)}
+                      className="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm outline-none bg-white">
+                      <option value="">选择转报目标管理员...</option>
+                      {adminList.map(a => (
+                        <option key={a.id} value={a.id}>{a.realName} ({a.username}) — {a.role}</option>
+                      ))}
+                    </select>
                     <textarea value={escalateNote} onChange={(e) => setEscalateNote(e.target.value)}
                       placeholder="转报原因..." rows={2}
                       className="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm resize-none outline-none" />
