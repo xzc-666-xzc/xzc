@@ -1,7 +1,7 @@
 # API 设计规范
 
 > 多模态智能模拟面试评测平台  
-> 版本：v1.0  
+> 版本：v3.0  
 > 基准规范：RESTful API 设计 + 统一响应体 + 错误码体系
 
 ---
@@ -243,7 +243,7 @@ Authorization: Bearer <jwt_token>
 |------|------|
 | `POST /api/user/login` | 登录 |
 | `POST /api/user/register` | 注册 |
-| `GET /api/positions/**` | 岗位公开查询 |
+| `GET /api/interviews/video/room/validate/**` | 视频房间验证 |
 | `POST /api/ai/asr-token` | ASR Token |
 
 ---
@@ -286,8 +286,34 @@ common/src/main/java/com/interview/common/
 | `gateway` | 8080 | `/api/**` | 网关、鉴权、路由 |
 | `user-service` | 9001 | `/api/user/**` | 用户认证与资料 |
 | `interview-service` | 9002 | `/api/interviews/**`, `/api/positions/**` | 面试管理 |
-| `ai-service` | 9003 | `/api/ai/**` | AI 能力（LLM + ASR） |
+| `ai-service` | 9003 | `/api/ai/**` | AI 能力（LLM + ASR + 情绪分析） |
 | `report-service` | 9004 | `/api/reports/**`, `/api/wrong-book/**` | 评测报告与错题本 |
+
+### 9.1 V3.0 新增端点
+
+#### 视频面试 (`/api/interviews/video/**`)
+
+| 方法 | 路径 | 鉴权 | 说明 |
+|------|------|------|------|
+| POST | `/api/interviews/video/room/create` | 需要 | 创建视频房间，生成 6 位房间号（Redis 30min） |
+| GET | `/api/interviews/video/room/validate/{roomId}` | 不需要 | 校验房间有效性，已结束的房间返回 invalid |
+| POST | `/api/interviews/video/start` | 需要 | 开始面试，返回题目列表 |
+| POST | `/api/interviews/video/answer` | 需要 | 提交答案（语音转文字后提交） |
+| POST | `/api/interviews/video/end` | 需要 | 结束面试，生成报告并保存 Q&A 到数据库 |
+
+#### 面试码 (`/api/interviews/**`)
+
+| 方法 | 路径 | 说明 |
+|------|------|------|
+| POST | `/api/interviews/create-by-hr` | HR 创建面试模板并生成 6 位邀请码 |
+| POST | `/api/interviews/join-by-code` | 候选人凭邀请码加入面试 |
+| GET | `/api/interviews/hr-list` | HR 查看自己创建的面试模板列表 |
+
+#### AI 情绪分析 (`/api/ai/**`)
+
+| 方法 | 路径 | 说明 |
+|------|------|------|
+| POST | `/api/ai/emotion` | 分析视频帧中人脸情绪（当前 Mock，预留真实 AI 对接） |
 
 ---
 

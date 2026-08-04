@@ -33,7 +33,8 @@ public class AuthFilter implements GlobalFilter, Ordered {
 
     private static final List<String> WHITE_PREFIXES = List.of(
             "/api/ai/asr-token",
-            "/api/interviews/video/room/validate"
+            "/api/interviews/video/room/validate",
+            "/api/files/"     // 附件图片/视频内联访问
     );
 
     public AuthFilter(JwtUtil jwtUtil) {
