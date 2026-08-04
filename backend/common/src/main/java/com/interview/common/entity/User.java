@@ -17,8 +17,11 @@ public class User {
     @TableId(type = IdType.ASSIGN_ID)
     private Long id;
 
-    /** 用户名 */
+    /** 登录账号 */
     private String username;
+
+    /** 显示名称（排行榜/页面展示用） */
+    private String displayName;
 
     /** 密码（加密存储） */
     private String password;

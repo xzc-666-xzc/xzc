@@ -10,6 +10,7 @@ import com.interview.user.mapper.UserMapper;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -27,6 +28,9 @@ public class UserService extends ServiceImpl<UserMapper, User> {
             throw new BusinessException(ResultCode.AUTH_FAILED, "该账号不存在");
         }
         if (user.getStatus() != null && user.getStatus() == 0) {
+            throw new BusinessException(ResultCode.AUTH_FAILED, "该账号正在等待管理员审批，请耐心等待");
+        }
+        if (user.getStatus() != null && user.getStatus() == 2) {
             throw new BusinessException(ResultCode.AUTH_FAILED, "该账号已被禁用，请联系管理员");
         }
         if (!BCrypt.checkpw(password, user.getPassword())) {
@@ -37,15 +41,19 @@ public class UserService extends ServiceImpl<UserMapper, User> {
 
     /**
      * 注册新用户
+     * candidate 直接激活(status=1)，hr/admin/teacher 需审批(status=0)
      */
     @Transactional
-    public User register(String username, String password, String email, String role) {
+    public User register(String username, String displayName, String password,
+                         String email, String role) {
         User user = new User();
         user.setUsername(username);
+        user.setDisplayName(displayName);
         user.setPassword(BCrypt.hashpw(password, BCrypt.gensalt()));
         user.setEmail(email);
         user.setRole(role);
-        user.setStatus(1);
+        // candidate 直接激活，其他角色需要管理员审批
+        user.setStatus("candidate".equals(role) ? 1 : 0);
         user.setInterviewStyle("friendly");
         user.setVoiceSpeed("normal");
 
@@ -118,6 +126,7 @@ public class UserService extends ServiceImpl<UserMapper, User> {
         }
 
         if (body.containsKey("username")) user.setUsername((String) body.get("username"));
+        if (body.containsKey("displayName")) user.setDisplayName((String) body.get("displayName"));
         if (body.containsKey("email")) user.setEmail((String) body.get("email"));
         if (body.containsKey("phone")) user.setPhone((String) body.get("phone"));
         if (body.containsKey("avatar")) user.setAvatar((String) body.get("avatar"));
@@ -125,5 +134,61 @@ public class UserService extends ServiceImpl<UserMapper, User> {
         if (body.containsKey("voiceSpeed")) user.setVoiceSpeed((String) body.get("voiceSpeed"));
 
         this.updateById(user);
+    }
+
+    // ==================== 管理员审批方法 ====================
+
+    /**
+     * 获取待审批用户列表（status=0）
+     */
+    public List<Map<String, Object>> getPendingUsers() {
+        List<User> users = this.list(
+                new LambdaQueryWrapper<User>()
+                        .eq(User::getStatus, 0)
+                        .orderByAsc(User::getCreatedAt)
+        );
+        List<Map<String, Object>> result = new ArrayList<>();
+        for (User u : users) {
+            result.add(Map.of(
+                    "id", u.getId().toString(),
+                    "username", u.getUsername(),
+                    "displayName", u.getDisplayName() != null ? u.getDisplayName() : u.getUsername(),
+                    "email", u.getEmail(),
+                    "role", u.getRole(),
+                    "createdAt", u.getCreatedAt() != null ? u.getCreatedAt().toString() : ""
+            ));
+        }
+        return result;
+    }
+
+    /**
+     * 审批通过：将状态改为正常
+     */
+    @Transactional
+    public void approveUser(Long id) {
+        User user = this.getById(id);
+        if (user == null) {
+            throw new BusinessException(ResultCode.NOT_FOUND, "用户不存在");
+        }
+        if (user.getStatus() != 0) {
+            throw new BusinessException(ResultCode.BAD_REQUEST, "该用户不在待审批状态");
+        }
+        user.setStatus(1);
+        this.updateById(user);
+    }
+
+    /**
+     * 驳回：直接删除用户记录
+     */
+    @Transactional
+    public void rejectUser(Long id) {
+        User user = this.getById(id);
+        if (user == null) {
+            throw new BusinessException(ResultCode.NOT_FOUND, "用户不存在");
+        }
+        if (user.getStatus() != 0) {
+            throw new BusinessException(ResultCode.BAD_REQUEST, "该用户不在待审批状态");
+        }
+        this.removeById(id);
     }
 }

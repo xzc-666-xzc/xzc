@@ -14,6 +14,7 @@ import AdminPanel from '@/pages/admin/AdminPanel';
 import WorkOrderList from '@/pages/work-order/WorkOrderList';
 import WorkOrderCreate from '@/pages/work-order/WorkOrderCreate';
 import WorkOrderDetail from '@/pages/work-order/WorkOrderDetail';
+import UserApproval from '@/pages/admin/UserApproval';
 
 // 需要登录才能访问
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -55,6 +56,7 @@ export default function App() {
         <Route path="leaderboard" element={<Leaderboard />} />
         <Route path="profile" element={<Profile />} />
         <Route path="admin" element={<AdminPanel />} />
+        <Route path="admin/user-approval" element={<UserApproval />} />
         <Route path="work-orders" element={<WorkOrderList />} />
         <Route path="work-orders/create" element={<WorkOrderCreate />} />
         <Route path="work-orders/:id" element={<WorkOrderDetail />} />

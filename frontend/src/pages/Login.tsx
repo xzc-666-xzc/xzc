@@ -105,8 +105,9 @@ export default function LoginPage() {
     } catch (err: any) {
       const msg: string = err?.response?.data?.message || err?.message || '登录失败';
       if (msg.includes('不存在')) { setLoginUsernameError(msg); }
-      else if (msg.includes('密码') || msg.includes('password')) { setLoginPasswordError(msg); }
+      else if (msg.includes('等待管理员审批')) { setLoginUsernameError(msg); }
       else if (msg.includes('禁用')) { setLoginUsernameError(msg); }
+      else if (msg.includes('密码') || msg.includes('password')) { setLoginPasswordError(msg); }
       else { setLoginError(msg); }
     } finally { setLoginLoading(false); }
   };
@@ -124,12 +125,21 @@ export default function LoginPage() {
     setRegError(''); setRegLoading(true);
     try {
       const res = await userService.register({
-        username: regAccount.trim(), password: regPassword,
+        username: regAccount.trim(), displayName: regDisplayName.trim(),
+        password: regPassword,
         email: `${regAccount.trim()}@interview.com`, role: regRole,
       });
-      const { token, user } = res.data.data as { token: string; user: { role: string } };
-      setAuth(user as never, token);
-      const isAdmin = user.role === 'admin' || user.role === 'hr';
+      const respData = res.data.data as { token?: string; user?: { role: string }; pending?: boolean; message?: string };
+      // HR/管理员需要审批
+      if (respData?.pending) {
+        setRegError('');
+        alert('注册成功！请等待管理员审批通过后再登录。');
+        switchTab('login');
+        return;
+      }
+      const { token, user } = respData;
+      setAuth(user as never, token!);
+      const isAdmin = user!.role === 'admin' || user!.role === 'hr';
       navigate(isAdmin ? '/admin' : '/', { replace: true });
     } catch (err: any) {
       const msg = err?.response?.data?.message || err?.message || '注册失败，请重试';
