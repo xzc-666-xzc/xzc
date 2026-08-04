@@ -39,9 +39,10 @@ public class UserService extends ServiceImpl<UserMapper, User> {
      * 注册新用户
      */
     @Transactional
-    public User register(String username, String password, String email, String role) {
+    public User register(String username, String realName, String password, String email, String role) {
         User user = new User();
         user.setUsername(username);
+        user.setRealName(realName);
         user.setPassword(BCrypt.hashpw(password, BCrypt.gensalt()));
         user.setEmail(email);
         user.setRole(role);
@@ -118,6 +119,7 @@ public class UserService extends ServiceImpl<UserMapper, User> {
         }
 
         if (body.containsKey("username")) user.setUsername((String) body.get("username"));
+        if (body.containsKey("realName")) user.setRealName((String) body.get("realName"));
         if (body.containsKey("email")) user.setEmail((String) body.get("email"));
         if (body.containsKey("phone")) user.setPhone((String) body.get("phone"));
         if (body.containsKey("avatar")) user.setAvatar((String) body.get("avatar"));

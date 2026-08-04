@@ -597,14 +597,28 @@ function MonitorTab() {
     (async () => {
       setLoading(true);
       try {
-        const res = await interviewService.getHistory({ page: 1, pageSize: 50 });
-        const data = (res.data as any)?.data as { records: typeof fallbackData } | undefined;
-        if (data?.records && data.records.length > 0) setRecords(data.records);
-        else setRecords(fallbackData);
+        const res = await interviewService.getOngoingList();
+        const ongoing = (res.data?.data as any[]) || [];
+        if (ongoing.length > 0) {
+          setRecords(ongoing.map((o: any) => ({
+            id: o.id, positionName: o.positionName, difficulty: o.difficulty,
+            mode: o.mode, score: null, status: o.status, questionCount: o.questionCount,
+            startedAt: o.startedAt, completedAt: null,
+            elapsedMinutes: o.elapsedMinutes, isTimeout: o.isTimeout,
+          })));
+        } else setRecords(fallbackData);
       } catch { setRecords(fallbackData); }
       setLoading(false);
     })();
   }, []);
+
+  const handleForceEnd = async (id: string) => {
+    if (!confirm('确定要强制终止该面试吗？')) return;
+    try {
+      await interviewService.forceEnd(id);
+      setRecords(prev => prev.map(r => r.id === id ? { ...r, status: 'completed' } : r));
+    } catch { alert('操作失败'); }
+  };
 
   const inProgress = records.filter(r => r.status === 'in_progress');
   const completed = records.filter(r => r.status === 'completed');
@@ -673,6 +687,9 @@ function MonitorTab() {
                   <span className="text-sm text-slate-500 font-medium">⏱ {getElapsed(item.startedAt, item.completedAt)}</span>
                   <span className="px-3 py-1 bg-emerald-100 text-emerald-700 rounded-full text-xs font-semibold">进行中</span>
                   <button className="text-sm text-accent-600 hover:text-accent-700 font-medium transition-colors">查看详情 →</button>
+                  <button onClick={() => handleForceEnd(item.id)}
+                    className="px-3 py-1 bg-rose-500 text-white rounded-lg text-xs font-medium hover:bg-rose-600 transition-colors"
+                    title="强制终止面试">⏹ 终止</button>
                 </div>
               </div>
             ))}

@@ -49,7 +49,7 @@ export const userService = {
   login: (data: { username: string; password: string }) =>
     http.post<ApiResponse<{ token: string; user: unknown }>>('/user/login', data),
 
-  register: (data: { username: string; password: string; email: string; role: string }) =>
+  register: (data: { username: string; realName: string; password: string; email: string; role: string }) =>
     http.post<ApiResponse<{ token: string; user: unknown }>>('/user/register', data),
 
   checkAccount: (username: string) =>
@@ -69,6 +69,20 @@ export interface LeaderboardEntry {
   username: string;
   interviewCount: number;
   avgScore: number;
+}
+
+export interface OngoingInterview {
+  id: string;
+  userId: string;
+  positionName: string;
+  difficulty: string;
+  mode: string;
+  type: string;
+  status: string;
+  startedAt: string;
+  questionCount: number;
+  elapsedMinutes: number;
+  isTimeout: boolean;
 }
 
 // ==================== 岗位服务 ====================
@@ -126,6 +140,14 @@ export const interviewService = {
   /** HR 查看自己创建的面试模板列表 */
   getHrList: (params?: { page?: number; pageSize?: number }) =>
     http.get<ApiResponse<import('@/types').PageData<import('@/types').InterviewTemplate>>>('/interviews/hr-list', { params }),
+
+  /** 管理员：获取进行中的面试列表 */
+  getOngoingList: () =>
+    http.get<ApiResponse<OngoingInterview[]>>('/interviews/admin/ongoing'),
+
+  /** 管理员：强制终止面试 */
+  forceEnd: (interviewId: string) =>
+    http.post<ApiResponse<{ message: string }>>(`/interviews/admin/${interviewId}/force-end`),
 };
 
 // ==================== 报告服务 ====================

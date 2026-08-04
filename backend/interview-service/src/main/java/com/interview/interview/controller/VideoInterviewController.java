@@ -264,15 +264,16 @@ public class VideoInterviewController {
                     a.setDuration(60);
                     answerMapper.insert(a);
 
-                    // Evaluation (5维度，基于单题得分推算)
+                    // Evaluation (5维度，基于单题得分生成有意义的值)
                     int qScore = qa.getScore() != null ? qa.getScore() : 50;
                     Evaluation e = new Evaluation();
                     e.setAnswerId(a.getId());
-                    e.setContentScore(qScore);
-                    e.setLogicScore(Math.max(0, qScore - 5 + new Random().nextInt(10)));
-                    e.setDepthScore(Math.max(0, qScore - 10 + new Random().nextInt(15)));
-                    e.setStarScore(Math.max(0, qScore - 5 + new Random().nextInt(8)));
-                    e.setExpressionScore(Math.max(0, qScore + new Random().nextInt(10)));
+                    // 以得分为基准，五维有小幅变化，确保各维度均有有意义的分数
+                    e.setContentScore(clampDim(qScore + randAdjust(rnd, 8)));
+                    e.setLogicScore(clampDim(qScore + randAdjust(rnd, 10)));
+                    e.setDepthScore(clampDim(qScore + randAdjust(rnd, 12)));
+                    e.setStarScore(clampDim(qScore + randAdjust(rnd, 10)));
+                    e.setExpressionScore(clampDim(qScore + randAdjust(rnd, 8)));
                     e.setOverallScore(qScore);
                     e.setStrengths(qScore >= 60 ? "[\"表达清晰\",\"内容充实\"]" : "[\"敢于尝试\"]");
                     e.setWeaknesses(qScore < 60 ? "[\"回答过于简短\",\"缺乏技术深度\",\"建议展开论述\"]" : "[\"可以更深入\"]");
@@ -295,6 +296,14 @@ public class VideoInterviewController {
     }
 
     // ==================== 辅助方法 ====================
+
+    /** 限制评分在0-100范围 */
+    private int clampDim(int v) { return Math.max(0, Math.min(100, v)); }
+
+    /** 生成[-range, +range]的随机调整值 */
+    private int randAdjust(Random rnd, int range) {
+        return rnd.nextInt(range * 2 + 1) - range;
+    }
 
     private String generateRoomCode() {
         Random random = new Random();

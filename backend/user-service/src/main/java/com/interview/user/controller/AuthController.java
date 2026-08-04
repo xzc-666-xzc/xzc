@@ -36,8 +36,10 @@ public class AuthController {
 
     @Data
     public static class RegisterRequest {
-        @NotBlank(message = "用户名不能为空")
+        @NotBlank(message = "账号不能为空")
         private String username;
+        @NotBlank(message = "真实姓名不能为空")
+        private String realName;
         @NotBlank(message = "密码不能为空")
         private String password;
         @NotBlank @Email
@@ -58,6 +60,7 @@ public class AuthController {
                 "user", Map.of(
                         "id", user.getId().toString(),
                         "username", user.getUsername(),
+                        "realName", user.getRealName() != null ? user.getRealName() : user.getUsername(),
                         "email", user.getEmail(),
                         "role", user.getRole(),
                         "avatar", user.getAvatar() != null ? user.getAvatar() : ""
@@ -70,10 +73,11 @@ public class AuthController {
     @PostMapping("/register")
     public R<Map<String, Object>> register(@Valid @RequestBody RegisterRequest req) {
         if (userService.existsByUsername(req.getUsername())) {
-            throw new BusinessException(ResultCode.CONFLICT, "用户名已存在");
+            throw new BusinessException(ResultCode.CONFLICT, "该账号已存在");
         }
 
-        User user = userService.register(req.getUsername(), req.getPassword(), req.getEmail(), req.getRole());
+        User user = userService.register(req.getUsername(), req.getRealName(),
+                req.getPassword(), req.getEmail(), req.getRole());
 
         String token = jwtUtil.generateToken(user.getId(), user.getUsername(), user.getRole());
 
@@ -82,6 +86,7 @@ public class AuthController {
                 "user", Map.of(
                         "id", user.getId().toString(),
                         "username", user.getUsername(),
+                        "realName", user.getRealName() != null ? user.getRealName() : user.getUsername(),
                         "email", user.getEmail(),
                         "role", user.getRole(),
                         "avatar", ""

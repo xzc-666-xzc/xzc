@@ -56,6 +56,9 @@ public class Interview {
     /** 结束时间 */
     private LocalDateTime completedAt;
 
+    /** 结束原因：NORMAL/TIMEOUT/ADMIN */
+    private String endReason;
+
     @TableField(fill = FieldFill.INSERT)
     private LocalDateTime createdAt;
 

@@ -124,7 +124,8 @@ export default function LoginPage() {
     setRegError(''); setRegLoading(true);
     try {
       const res = await userService.register({
-        username: regAccount.trim(), password: regPassword,
+        username: regAccount.trim(), realName: regDisplayName.trim(),
+        password: regPassword,
         email: `${regAccount.trim()}@interview.com`, role: regRole,
       });
       const { token, user } = res.data.data as { token: string; user: { role: string } };

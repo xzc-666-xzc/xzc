@@ -537,6 +537,123 @@ public class InterviewService extends ServiceImpl<InterviewMapper, Interview> {
 
     // ==================== 原有方法 ====================
 
+    // ==================== 超时与强制结束 ====================
+
+    @Transactional
+    public void forceEndInterview(Long interviewId, String reason) {
+        Interview interview = this.getById(interviewId);
+        if (interview == null) return;
+        // 只处理进行中的面试
+        if (!"in_progress".equals(interview.getStatus())
+            && !"pending".equals(interview.getStatus())) return;
+
+        // 如果还没生成评测，先生成（给个默认评分）
+        long evalCount = evaluationMapper.selectCount(
+                new LambdaQueryWrapper<Evaluation>()
+                        .inSql(Evaluation::getAnswerId,
+                            "SELECT a.id FROM t_answer a JOIN t_question q ON a.question_id = q.id WHERE q.interview_id = " + interviewId));
+        if (evalCount == 0) {
+            // 补一个默认评测
+            // 查 interview 的所有 question
+            List<Question> questions = questionMapper.selectList(
+                    new LambdaQueryWrapper<Question>().eq(Question::getInterviewId, interviewId));
+            if (questions.isEmpty()) {
+                // 连题目都没有，补一道占位题目
+                Question q = new Question();
+                q.setInterviewId(interviewId);
+                q.setIndex(0);
+                q.setContent("系统自动结束的面试");
+                q.setType("main");
+                questionMapper.insert(q);
+                // 再补答案
+                Answer a = new Answer();
+                a.setQuestionId(q.getId());
+                a.setContent("面试因超时或被管理员终止而自动结束");
+                a.setDuration(0);
+                answerMapper.insert(a);
+                // 默认评测
+                Evaluation e = buildDefaultEvaluation(a.getId());
+                evaluationMapper.insert(e);
+            } else {
+                for (Question q : questions) {
+                    Answer a = answerMapper.selectOne(
+                            new LambdaQueryWrapper<Answer>().eq(Answer::getQuestionId, q.getId()));
+                    if (a != null) {
+                        long count = evaluationMapper.selectCount(
+                                new LambdaQueryWrapper<Evaluation>().eq(Evaluation::getAnswerId, a.getId()));
+                        if (count == 0) {
+                            Evaluation e = buildDefaultEvaluation(a.getId());
+                            evaluationMapper.insert(e);
+                        }
+                    }
+                }
+            }
+        }
+
+        // 计算总分
+        int totalScore = calculateTotalScore(interviewId);
+        interview.setScore(totalScore);
+        interview.setStatus("completed");
+        interview.setEndReason(reason);
+        interview.setCompletedAt(LocalDateTime.now());
+        if (interview.getStartedAt() == null) {
+            interview.setStartedAt(LocalDateTime.now().minusMinutes(1));
+        }
+        this.updateById(interview);
+
+        // 生成总结
+        String summary = "TIMEOUT".equals(reason)
+            ? "面试因超过60分钟未完成而自动结束"
+            : "面试已被管理员手动终止";
+        interview.setSummary(summary);
+        this.updateById(interview);
+    }
+
+    private Evaluation buildDefaultEvaluation(Long answerId) {
+        Evaluation e = new Evaluation();
+        e.setAnswerId(answerId);
+        e.setContentScore(50);
+        e.setLogicScore(50);
+        e.setDepthScore(50);
+        e.setStarScore(50);
+        e.setExpressionScore(50);
+        e.setOverallScore(50);
+        e.setStrengths("[\"面试已结束\"]");
+        e.setWeaknesses("[\"面试因超时或被管理员终止，未正常完成全部答题\"]");
+        e.setSuggestions("[\"建议重新进行完整的模拟面试以获取准确评测\"]");
+        e.setReferenceAnswer("面试未正常完成，无法提供针对性参考答案");
+        return e;
+    }
+
+    /** 获取进行中的面试列表（管理后台用） */
+    public List<Map<String, Object>> getOngoingList() {
+        List<Interview> list = this.list(
+                new LambdaQueryWrapper<Interview>()
+                        .eq(Interview::getStatus, "in_progress")
+                        .orderByAsc(Interview::getStartedAt));
+
+        List<Map<String, Object>> result = new java.util.ArrayList<>();
+        for (Interview i : list) {
+            Map<String, Object> m = new java.util.HashMap<>();
+            m.put("id", i.getId().toString());
+            m.put("userId", i.getUserId() != null ? i.getUserId().toString() : "");
+            m.put("positionName", i.getPositionName());
+            m.put("difficulty", i.getDifficulty());
+            m.put("mode", i.getMode());
+            m.put("type", i.getType());
+            m.put("status", i.getStatus());
+            m.put("startedAt", i.getStartedAt() != null ? i.getStartedAt().toString() : null);
+            m.put("questionCount", i.getQuestionCount());
+            long minutes = i.getStartedAt() != null
+                ? java.time.Duration.between(i.getStartedAt(), LocalDateTime.now()).toMinutes()
+                : 0;
+            m.put("elapsedMinutes", minutes);
+            m.put("isTimeout", minutes > 60);
+            result.add(m);
+        }
+        return result;
+    }
+
     @Transactional
     public void pauseInterview(Long interviewId, Long userId) {
         Interview interview = getInterview(interviewId, userId);
