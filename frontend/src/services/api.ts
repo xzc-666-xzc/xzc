@@ -84,6 +84,12 @@ export interface AdminBrief {
   role: string;
 }
 
+export interface DispatchConfigItem {
+  workOrderType: string;
+  assigneeId: string;
+  assigneeName: string;
+}
+
 export interface OngoingInterview {
   id: string;
   userId: string;
@@ -269,6 +275,13 @@ export const workOrderService = {
 
   forceClose: (id: string, reason: string) =>
     http.post<ApiResponse<{ id: string; status: string }>>(`/work-orders/${id}/force-close`, { reason }),
+
+  // 分发配置
+  getDispatchConfig: () =>
+    http.get<ApiResponse<DispatchConfigItem[]>>('/work-orders/dispatch-config'),
+
+  updateDispatchConfig: (workOrderType: string, assigneeId: number) =>
+    http.put<ApiResponse<void>>('/work-orders/dispatch-config', { workOrderType, assigneeId }),
 };
 
 // ==================== 通知服务 ====================

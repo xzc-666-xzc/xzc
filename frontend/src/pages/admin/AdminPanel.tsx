@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts';
 import { MOCK_POSITIONS, MOCK_INTERVIEWS } from '@/data/mock';
 import { useUserStore } from '@/stores';
-import { userService, interviewService, positionService } from '@/services/api';
+import { userService, interviewService, positionService, workOrderService } from '@/services/api';
 import { questionBanks } from '@/data/questions';
 import type { PositionBank, QuestionTemplate } from '@/data/questions';
 import type { InterviewTemplate, Difficulty, InterviewMode, InterviewType } from '@/types';
@@ -758,6 +758,76 @@ function MonitorTab() {
           </table>
         </div>
       </div>
+
+      {/* Dispatch Config */}
+      <DispatchConfigPanel />
+    </div>
+  );
+}
+
+// ==================== 分发配置面板 ====================
+function DispatchConfigPanel() {
+  const [configs, setConfigs] = useState<Array<{ workOrderType: string; assigneeId: string; assigneeName: string }>>([]);
+  const [admins, setAdmins] = useState<Array<{ id: string; realName: string; username: string }>>([]);
+  const [loading, setLoading] = useState(true);
+
+  const typeLabels: Record<string, string> = {
+    'INTERVIEW_FAULT': '面试故障',
+    'FEATURE_SUGGESTION': '功能建议',
+    'BUG_REPORT': 'BUG上报',
+  };
+
+  useEffect(() => {
+    Promise.all([
+      workOrderService.getDispatchConfig(),
+      workOrderService.getAdminList(),
+    ]).then(([cfgRes, adminRes]) => {
+      setConfigs((cfgRes.data?.data as any[]) || []);
+      setAdmins((adminRes.data?.data as any[]) || []);
+    }).catch(() => {}).finally(() => setLoading(false));
+  }, []);
+
+  const handleChange = async (workOrderType: string, assigneeId: number) => {
+    try {
+      await workOrderService.updateDispatchConfig(workOrderType, assigneeId);
+      setConfigs(prev => prev.map(c =>
+        c.workOrderType === workOrderType ? { ...c, assigneeId: String(assigneeId), assigneeName: admins.find(a => a.id === String(assigneeId))?.realName || '' } : c
+      ));
+    } catch { alert('更新失败'); }
+  };
+
+  return (
+    <div className="card p-6">
+      <h3 className="font-semibold text-slate-800 mb-5 flex items-center gap-2.5">
+        <span className="w-2 h-2 rounded-full bg-purple-500" />
+        📋 工单分发配置
+      </h3>
+      {loading ? (
+        <div className="flex justify-center py-8"><div className="w-6 h-6 border-2 border-accent-500 border-t-transparent rounded-full animate-spin" /></div>
+      ) : (
+        <div className="space-y-3">
+          {configs.map(cfg => (
+            <div key={cfg.workOrderType} className="flex items-center gap-4 p-3 bg-warm-alt rounded-xl">
+              <span className="text-sm font-semibold text-slate-700 w-24 shrink-0">
+                {typeLabels[cfg.workOrderType] || cfg.workOrderType}
+              </span>
+              <span className="text-xs text-slate-400">→</span>
+              <select
+                value={cfg.assigneeId}
+                onChange={(e) => handleChange(cfg.workOrderType, Number(e.target.value))}
+                className="flex-1 px-3 py-2 rounded-lg border border-slate-200 text-sm outline-none bg-white"
+              >
+                {admins.map(a => (
+                  <option key={a.id} value={a.id}>{a.realName} ({a.username})</option>
+                ))}
+              </select>
+              <span className="text-xs text-slate-400">
+                {cfg.assigneeName}
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

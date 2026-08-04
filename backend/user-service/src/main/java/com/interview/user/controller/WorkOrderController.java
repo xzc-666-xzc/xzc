@@ -92,6 +92,25 @@ public class WorkOrderController {
         return R.ok(workOrderService.getAdminList());
     }
 
+    @Operation(summary = "获取分发配置列表")
+    @GetMapping("/dispatch-config")
+    public R<java.util.List<java.util.Map<String, Object>>> getDispatchConfig() {
+        return R.ok(workOrderService.getDispatchConfigList());
+    }
+
+    @Data
+    public static class UpdateDispatchRequest {
+        @NotBlank private String workOrderType;
+        @NotNull private Long assigneeId;
+    }
+
+    @Operation(summary = "更新分发配置（管理员指定类型负责人）")
+    @PutMapping("/dispatch-config")
+    public R<Void> updateDispatchConfig(@Valid @RequestBody UpdateDispatchRequest req) {
+        workOrderService.updateDispatchConfig(req.getWorkOrderType(), req.getAssigneeId());
+        return R.ok();
+    }
+
     // ==================== CRUD 端点 ====================
 
     @Operation(summary = "创建工单（保存为草稿）")

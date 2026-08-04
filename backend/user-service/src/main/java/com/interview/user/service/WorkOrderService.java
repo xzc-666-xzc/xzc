@@ -17,6 +17,9 @@ import com.interview.user.mapper.WorkOrderMapper;
 import com.interview.user.mapper.WorkOrderMessageMapper;
 import com.interview.user.vo.WorkOrderDetailVO;
 import com.interview.user.vo.WorkOrderListVO;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.interview.common.entity.DispatchConfig;
+import com.interview.user.mapper.DispatchConfigMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
@@ -38,6 +41,7 @@ public class WorkOrderService {
     private final NotificationService notificationService;
     private final WorkOrderMessageService messageService;
     private final StringRedisTemplate redisTemplate;
+    private final DispatchConfigMapper dispatchConfigMapper;
 
     // ==================== 管理员列表 ====================
 
@@ -252,20 +256,53 @@ public class WorkOrderService {
         return vo;
     }
 
-    // ==================== 智能分发 ====================
+    // ==================== 分发配置管理 ====================
 
-    /** 问题类型 → 专属管理员映射 */
-    private static final Map<String, Long> TYPE_ADMIN_MAP = Map.of(
-        "INTERVIEW_FAULT", 10001L,    // 面试故障 → GxzcA
-        "FEATURE_SUGGESTION", 10002L, // 功能建议 → GxzcB
-        "BUG_REPORT", 10003L          // BUG上报 → GxzcC
-    );
+    public List<Map<String, Object>> getDispatchConfigList() {
+        List<DispatchConfig> configs = dispatchConfigMapper.selectList(null);
+        List<Map<String, Object>> result = new ArrayList<>();
+        for (DispatchConfig c : configs) {
+            result.add(Map.of(
+                "workOrderType", c.getWorkOrderType(),
+                "assigneeId", c.getAssigneeId().toString(),
+                "assigneeName", c.getAssigneeName() != null ? c.getAssigneeName() : ""
+            ));
+        }
+        return result;
+    }
+
+    @Transactional
+    public void updateDispatchConfig(String workOrderType, Long assigneeId) {
+        User assignee = userMapper.selectById(assigneeId);
+        if (assignee == null) throw new BusinessException(ResultCode.NOT_FOUND, "管理员不存在");
+
+        DispatchConfig config = dispatchConfigMapper.selectOne(
+                new LambdaQueryWrapper<DispatchConfig>()
+                        .eq(DispatchConfig::getWorkOrderType, workOrderType));
+        if (config == null) {
+            config = new DispatchConfig();
+            config.setWorkOrderType(workOrderType);
+            config.setAssigneeId(assigneeId);
+            config.setAssigneeName(assignee.getRealName() != null ? assignee.getRealName() : assignee.getUsername());
+            dispatchConfigMapper.insert(config);
+        } else {
+            config.setAssigneeId(assigneeId);
+            config.setAssigneeName(assignee.getRealName() != null ? assignee.getRealName() : assignee.getUsername());
+            dispatchConfigMapper.updateById(config);
+        }
+    }
+
+    // ==================== 智能分发 ====================
 
     private static final String ONLINE_KEY_PREFIX = "admin:online:";
 
     private void tryDispatchByType(WorkOrder order) {
-        Long targetAdminId = TYPE_ADMIN_MAP.get(order.getType());
-        if (targetAdminId == null) return;
+        // 从数据库读取分发配置
+        DispatchConfig config = dispatchConfigMapper.selectOne(
+                new LambdaQueryWrapper<DispatchConfig>()
+                        .eq(DispatchConfig::getWorkOrderType, order.getType()));
+        if (config == null) return;
+        Long targetAdminId = config.getAssigneeId();
 
         // 检查目标管理员是否在线
         Boolean online = redisTemplate.hasKey(ONLINE_KEY_PREFIX + targetAdminId);
