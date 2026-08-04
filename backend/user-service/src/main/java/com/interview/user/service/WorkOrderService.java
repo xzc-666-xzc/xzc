@@ -18,6 +18,7 @@ import com.interview.user.mapper.WorkOrderMessageMapper;
 import com.interview.user.vo.WorkOrderDetailVO;
 import com.interview.user.vo.WorkOrderListVO;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
@@ -36,6 +37,7 @@ public class WorkOrderService {
     private final WorkOrderStateMachine stateMachine;
     private final NotificationService notificationService;
     private final WorkOrderMessageService messageService;
+    private final StringRedisTemplate redisTemplate;
 
     // ==================== 管理员列表 ====================
 
@@ -250,6 +252,59 @@ public class WorkOrderService {
         return vo;
     }
 
+    // ==================== 智能分发 ====================
+
+    /** 问题类型 → 专属管理员映射 */
+    private static final Map<String, Long> TYPE_ADMIN_MAP = Map.of(
+        "INTERVIEW_FAULT", 10001L,    // 面试故障 → GxzcA
+        "FEATURE_SUGGESTION", 10002L, // 功能建议 → GxzcB
+        "BUG_REPORT", 10003L          // BUG上报 → GxzcC
+    );
+
+    private static final String ONLINE_KEY_PREFIX = "admin:online:";
+
+    private void tryDispatchByType(WorkOrder order) {
+        Long targetAdminId = TYPE_ADMIN_MAP.get(order.getType());
+        if (targetAdminId == null) return;
+
+        // 检查目标管理员是否在线
+        Boolean online = redisTemplate.hasKey(ONLINE_KEY_PREFIX + targetAdminId);
+        if (Boolean.TRUE.equals(online)) {
+            // 在线 → 自动接单
+            order.setAssigneeId(targetAdminId);
+            order.setStatus(WorkOrderStatus.PROCESSING.name());
+            workOrderMapper.updateById(order);
+
+            messageService.addSystemMessage(order.getId(),
+                "已自动分配给 " + getAdminName(targetAdminId) + "（" + getTypeLabel(order.getType()) + "专属处理）");
+
+            notificationService.notifyUser(targetAdminId,
+                "新工单已分配",
+                String.format("「%s」类型工单「%s」已自动分配给您处理",
+                    getTypeLabel(order.getType()), order.getTitle()),
+                "/work-orders/" + order.getId());
+        } else {
+            // 离线 → 保持PENDING，通知管理员上线
+            messageService.addSystemMessage(order.getId(),
+                getAdminName(targetAdminId) + " 当前离线，" + getTypeLabel(order.getType()) + "工单等待处理中");
+
+            notificationService.notifyUser(targetAdminId,
+                "新工单待处理（离线通知）",
+                String.format("您有一条「%s」类型工单「%s」待处理，请尽快上线",
+                    getTypeLabel(order.getType()), order.getTitle()),
+                "/work-orders/" + order.getId());
+        }
+    }
+
+    private String getTypeLabel(String type) {
+        return switch (type) {
+            case "INTERVIEW_FAULT" -> "面试故障";
+            case "FEATURE_SUGGESTION" -> "功能建议";
+            case "BUG_REPORT" -> "BUG上报";
+            default -> type;
+        };
+    }
+
     // ==================== 状态流转 ====================
 
     @Transactional
@@ -260,6 +315,9 @@ public class WorkOrderService {
         }
         stateMachine.transition(order, WorkOrderStatus.PENDING, userId, "candidate");
         workOrderMapper.updateById(order);
+
+        // 智能分发：根据问题类型自动分配
+        tryDispatchByType(order);
 
         // 通知管理员
         notificationService.notifyAdmins(
@@ -420,6 +478,85 @@ public class WorkOrderService {
         messageService.addSystemMessage(orderId,
             String.format("工单已转派给 %s（ID:%d）", newAssignee.getUsername(), newAssigneeId));
 
+        return order;
+    }
+
+    // ==================== 撤销功能 ====================
+
+    /** 用户撤销工单（仅 DRAFT/PENDING 状态） */
+    @Transactional
+    public WorkOrder revokeByUser(Long orderId, Long userId) {
+        WorkOrder order = workOrderMapper.selectById(orderId);
+        if (order == null) {
+            throw new BusinessException(ResultCode.NOT_FOUND, "工单不存在");
+        }
+        if (!order.getSubmitterId().equals(userId)) {
+            throw new BusinessException(ResultCode.FORBIDDEN, "只能撤销自己的工单");
+        }
+        String status = order.getStatus();
+        if (!"DRAFT".equals(status) && !"PENDING".equals(status)) {
+            throw new BusinessException(ResultCode.BAD_REQUEST, "该工单已进入处理流程，无法撤销，请联系管理员");
+        }
+        order.setStatus(WorkOrderStatus.CLOSED.name());
+        order.setResolution("用户主动撤销");
+        order.setClosedAt(java.time.LocalDateTime.now());
+        workOrderMapper.updateById(order);
+
+        messageService.addSystemMessage(orderId, "用户主动撤销了工单");
+        return order;
+    }
+
+    /** 管理员退回工单到待处理池（PROCESSING → PENDING，清除处理人） */
+    @Transactional
+    public WorkOrder returnToPool(Long orderId, Long adminId, String role) {
+        WorkOrder order = workOrderMapper.selectById(orderId);
+        if (order == null) {
+            throw new BusinessException(ResultCode.NOT_FOUND, "工单不存在");
+        }
+        boolean isAdmin = "admin".equals(role) || "hr".equals(role) || "teacher".equals(role);
+        if (!isAdmin) {
+            throw new BusinessException(ResultCode.FORBIDDEN, "只有管理员可以退回工单");
+        }
+        if (!"PROCESSING".equals(order.getStatus())) {
+            throw new BusinessException(ResultCode.BAD_REQUEST, "只有处理中的工单可以退回");
+        }
+        Long oldAssignee = order.getAssigneeId();
+        order.setStatus(WorkOrderStatus.PENDING.name());
+        order.setAssigneeId(null);
+        workOrderMapper.updateById(order);
+
+        messageService.addSystemMessage(orderId, String.format(
+            "管理员 %s 将工单退回待处理池，原处理人：%s，将重新分配",
+            getAdminName(adminId), getAdminName(oldAssignee)));
+        return order;
+    }
+
+    /** 管理员强制关闭工单（任意状态，附带原因） */
+    @Transactional
+    public WorkOrder forceClose(Long orderId, Long adminId, String role, String reason) {
+        WorkOrder order = workOrderMapper.selectById(orderId);
+        if (order == null) {
+            throw new BusinessException(ResultCode.NOT_FOUND, "工单不存在");
+        }
+        boolean isAdmin = "admin".equals(role) || "hr".equals(role) || "teacher".equals(role);
+        if (!isAdmin) {
+            throw new BusinessException(ResultCode.FORBIDDEN, "只有管理员可以强制关闭工单");
+        }
+        order.setStatus(WorkOrderStatus.CLOSED.name());
+        order.setResolution(reason != null && !reason.isBlank() ? reason : "管理员强制关闭");
+        order.setClosedAt(java.time.LocalDateTime.now());
+        workOrderMapper.updateById(order);
+
+        if (!adminId.equals(order.getSubmitterId())) {
+            notificationService.notifyUser(order.getSubmitterId(),
+                "工单已关闭",
+                String.format("您的工单「%s」已被管理员关闭，原因：%s",
+                    order.getTitle(), reason != null ? reason : "无"),
+                "/work-orders/" + order.getId());
+        }
+
+        messageService.addSystemMessage(orderId,
+            String.format("管理员强制关闭了工单，原因：%s", reason != null ? reason : "无"));
         return order;
     }
 }

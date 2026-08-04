@@ -132,6 +132,25 @@ export default function WorkOrderDetail() {
           setReassignTarget('');
           break;
         }
+        case 'revoke': {
+          if (!confirm('确定撤销该工单吗？撤销后将无法恢复。')) return;
+          const res = await workOrderService.revoke(id);
+          updateOrderStatus(id, res.data.data.status);
+          break;
+        }
+        case 'returnToPool': {
+          if (!confirm('确定将该工单退回待处理池吗？将重新进行智能分配。')) return;
+          const res = await workOrderService.returnToPool(id);
+          updateOrderStatus(id, res.data.data.status);
+          break;
+        }
+        case 'forceClose': {
+          const reason = prompt('请输入强制关闭原因：');
+          if (reason === null) return; // 用户取消
+          const res = await workOrderService.forceClose(id, reason || '');
+          updateOrderStatus(id, res.data.data.status);
+          break;
+        }
       }
       fetchDetail();
       fetchMessages();
@@ -175,6 +194,10 @@ export default function WorkOrderDetail() {
   const canEscalate = (currentOrder.status === 'PENDING' || currentOrder.status === 'PROCESSING') && isAdmin;
   const canReassign = currentOrder!.status === 'PROCESSING' && isAdmin;
   const canMessage = currentOrder!.status !== 'RESOLVED' && currentOrder!.status !== 'CLOSED';
+  const canRevoke = (currentOrder!.status === 'DRAFT' || currentOrder!.status === 'PENDING')
+    && currentOrder!.submitter?.id === user?.id;
+  const canReturnToPool = currentOrder!.status === 'PROCESSING' && isAdmin;
+  const canForceClose = isAdmin && currentOrder!.status !== 'CLOSED';
 
   return (
     <div className="h-[calc(100vh-4rem)] flex flex-col">
@@ -350,6 +373,18 @@ export default function WorkOrderDetail() {
             {canClose && (
               <ActionBtn label="关闭工单" icon="🔒" color="bg-slate-600 hover:bg-slate-700 text-white"
                 loading={actionLoading === 'close'} onClick={() => handleAction('close')} />
+            )}
+            {canRevoke && (
+              <ActionBtn label="撤销工单" icon="↩️" color="bg-gray-500 hover:bg-gray-600 text-white"
+                loading={actionLoading === 'revoke'} onClick={() => handleAction('revoke')} />
+            )}
+            {canReturnToPool && (
+              <ActionBtn label="退回待处理池" icon="🔄" color="bg-orange-500 hover:bg-orange-600 text-white"
+                loading={actionLoading === 'returnToPool'} onClick={() => handleAction('returnToPool')} />
+            )}
+            {canForceClose && (
+              <ActionBtn label="强制关闭" icon="⛔" color="bg-red-600 hover:bg-red-700 text-white"
+                loading={actionLoading === 'forceClose'} onClick={() => handleAction('forceClose')} />
             )}
           </div>
         </div>

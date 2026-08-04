@@ -210,6 +210,59 @@ public class WorkOrderController {
         ));
     }
 
+    // ==================== 撤销端点 ====================
+
+    @Data
+    public static class ForceCloseRequest {
+        private String reason = "";
+    }
+
+    @Operation(summary = "用户撤销工单（仅DRAFT/PENDING）")
+    @PostMapping("/{id}/revoke")
+    public R<Map<String, Object>> revoke(
+            HttpServletRequest request,
+            @PathVariable Long id) {
+        Long userId = authUtil.getUserId(request);
+        WorkOrder order = workOrderService.revokeByUser(id, userId);
+        return R.ok(Map.of(
+            "id", order.getId().toString(),
+            "status", order.getStatus(),
+            "updatedAt", order.getUpdatedAt().toString()
+        ));
+    }
+
+    @Operation(summary = "管理员退回工单到待处理池（PROCESSING→PENDING）")
+    @PostMapping("/{id}/return-to-pool")
+    public R<Map<String, Object>> returnToPool(
+            HttpServletRequest request,
+            @PathVariable Long id) {
+        Long userId = authUtil.getUserId(request);
+        String role = authUtil.getRole(request);
+        WorkOrder order = workOrderService.returnToPool(id, userId, role);
+        return R.ok(Map.of(
+            "id", order.getId().toString(),
+            "status", order.getStatus(),
+            "updatedAt", order.getUpdatedAt().toString()
+        ));
+    }
+
+    @Operation(summary = "管理员强制关闭工单（任意状态，附带原因）")
+    @PostMapping("/{id}/force-close")
+    public R<Map<String, Object>> forceClose(
+            HttpServletRequest request,
+            @PathVariable Long id,
+            @RequestBody(required = false) ForceCloseRequest req) {
+        Long userId = authUtil.getUserId(request);
+        String role = authUtil.getRole(request);
+        String reason = req != null ? req.getReason() : "";
+        WorkOrder order = workOrderService.forceClose(id, userId, role, reason);
+        return R.ok(Map.of(
+            "id", order.getId().toString(),
+            "status", order.getStatus(),
+            "updatedAt", order.getUpdatedAt().toString()
+        ));
+    }
+
     @Operation(summary = "转报上级")
     @PostMapping("/{id}/escalate")
     public R<Map<String, Object>> escalate(

@@ -202,6 +202,20 @@ export default function MainLayout() {
     return () => clearInterval(interval);
   }, [user, fetchUnreadCount, fetchNotifList]);
 
+  // 管理员心跳（管理员登录后每30秒上报在线状态）
+  const isAdmin = user?.role === 'admin' || user?.role === 'hr' || user?.role === 'teacher';
+  useEffect(() => {
+    if (!isAdmin) return;
+    const sendHeartbeat = () => {
+      import('@/services/api').then(({ userService }) => {
+        userService.heartbeat().catch(() => {});
+      });
+    };
+    sendHeartbeat();
+    const interval = setInterval(sendHeartbeat, 30000);
+    return () => clearInterval(interval);
+  }, [isAdmin]);
+
   const hasNew = unreadCount > 0;
 
   const handleBellClick = () => {

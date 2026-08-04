@@ -63,6 +63,12 @@ export const userService = {
 
   getLeaderboard: () =>
     http.get<ApiResponse<LeaderboardEntry[]>>('/user/leaderboard'),
+
+  heartbeat: () =>
+    http.post<ApiResponse<void>>('/user/heartbeat'),
+
+  getOnlineStatus: (userIds: string) =>
+    http.get<ApiResponse<Record<string, boolean>>>('/user/admin/online-status', { params: { userIds } }),
 };
 
 export interface LeaderboardEntry {
@@ -253,6 +259,16 @@ export const workOrderService = {
 
   deleteAttachment: (orderId: string, attId: string) =>
     http.delete<ApiResponse<void>>(`/work-orders/${orderId}/attachments/${attId}`),
+
+  // 撤销
+  revoke: (id: string) =>
+    http.post<ApiResponse<{ id: string; status: string }>>(`/work-orders/${id}/revoke`),
+
+  returnToPool: (id: string) =>
+    http.post<ApiResponse<{ id: string; status: string }>>(`/work-orders/${id}/return-to-pool`),
+
+  forceClose: (id: string, reason: string) =>
+    http.post<ApiResponse<{ id: string; status: string }>>(`/work-orders/${id}/force-close`, { reason }),
 };
 
 // ==================== 通知服务 ====================
