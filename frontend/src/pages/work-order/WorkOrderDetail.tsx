@@ -24,6 +24,8 @@ export default function WorkOrderDetail() {
   const [showEscalate, setShowEscalate] = useState(false);
   const [escalateTarget, setEscalateTarget] = useState('');
   const [escalateNote, setEscalateNote] = useState('');
+  const [showReassign, setShowReassign] = useState(false);
+  const [reassignTarget, setReassignTarget] = useState('');
   const [showResolve, setShowResolve] = useState(false);
   const [resolution, setResolution] = useState('');
   const chatEndRef = useRef<HTMLDivElement>(null);
@@ -108,6 +110,13 @@ export default function WorkOrderDetail() {
           setEscalateNote('');
           break;
         }
+        case 'reassign': {
+          const res = await workOrderService.reassign(id, reassignTarget);
+          updateOrderStatus(id, currentOrder.status, { assigneeName: res.data.data.assigneeId });
+          setShowReassign(false);
+          setReassignTarget('');
+          break;
+        }
       }
       fetchDetail();
       fetchMessages();
@@ -141,6 +150,8 @@ export default function WorkOrderDetail() {
                     currentOrder.status === 'PROCESSING' ||
                     currentOrder.status === 'RESOLVED';
   const canEscalate = (currentOrder.status === 'PENDING' || currentOrder.status === 'PROCESSING') && isAdmin;
+  const canReassign = currentOrder.status === 'PROCESSING' && isAdmin;
+  const canMessage = currentOrder.status !== 'RESOLVED' && currentOrder.status !== 'CLOSED';
 
   return (
     <div className="h-[calc(100vh-4rem)] flex flex-col">
@@ -282,6 +293,27 @@ export default function WorkOrderDetail() {
                 )}
               </>
             )}
+            {canReassign && (
+              <>
+                <button onClick={() => setShowReassign(true)}
+                  className="w-full px-4 py-2.5 rounded-xl bg-purple-50 border border-purple-200 text-purple-700 text-sm font-medium hover:bg-purple-100 transition-all active:scale-95">
+                  🔀 转派他人
+                </button>
+                {showReassign && (
+                  <div className="bg-slate-50 rounded-xl p-3 space-y-2">
+                    <input value={reassignTarget} onChange={(e) => setReassignTarget(e.target.value)}
+                      placeholder="输入目标管理员ID" className="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm outline-none" />
+                    <div className="flex gap-2">
+                      <button onClick={() => handleAction('reassign')} disabled={!reassignTarget || actionLoading !== null}
+                        className="px-4 py-1.5 bg-purple-600 text-white text-sm rounded-lg hover:bg-purple-700 disabled:opacity-50">
+                        {actionLoading === 'reassign' ? '转派中...' : '确认转派'}
+                      </button>
+                      <button onClick={() => setShowReassign(false)} className="px-4 py-1.5 text-sm text-slate-500">取消</button>
+                    </div>
+                  </div>
+                )}
+              </>
+            )}
             {canClose && (
               <ActionBtn label="关闭工单" icon="🔒" color="bg-slate-600 hover:bg-slate-700 text-white"
                 loading={actionLoading === 'close'} onClick={() => handleAction('close')} />
@@ -314,30 +346,36 @@ export default function WorkOrderDetail() {
 
           {/* Input */}
           <div className="px-6 py-4 border-t border-slate-100 bg-white shrink-0">
-            <div className="flex items-end gap-3">
-              <textarea
-                value={newMessage}
-                onChange={(e) => setNewMessage(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' && !e.shiftKey) {
-                    e.preventDefault();
-                    handleSendMessage();
-                  }
-                }}
-                placeholder="输入回复... (Enter 发送，Shift+Enter 换行)"
-                rows={2}
-                className="flex-1 px-4 py-2.5 rounded-xl border border-slate-200 text-sm resize-none outline-none
-                           focus:ring-2 focus:ring-accent-500/20 focus:border-accent-400"
-              />
-              <button
-                onClick={handleSendMessage}
-                disabled={!newMessage.trim() || sending}
-                className="px-5 py-2.5 rounded-xl bg-accent-600 text-white text-sm font-medium
-                           hover:bg-accent-700 disabled:opacity-40 transition-all active:scale-95 shrink-0"
-              >
-                {sending ? '...' : '发送'}
-              </button>
-            </div>
+            {canMessage ? (
+              <div className="flex items-end gap-3">
+                <textarea
+                  value={newMessage}
+                  onChange={(e) => setNewMessage(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                      e.preventDefault();
+                      handleSendMessage();
+                    }
+                  }}
+                  placeholder="输入回复... (Enter 发送，Shift+Enter 换行)"
+                  rows={2}
+                  className="flex-1 px-4 py-2.5 rounded-xl border border-slate-200 text-sm resize-none outline-none
+                             focus:ring-2 focus:ring-accent-500/20 focus:border-accent-400"
+                />
+                <button
+                  onClick={handleSendMessage}
+                  disabled={!newMessage.trim() || sending}
+                  className="px-5 py-2.5 rounded-xl bg-accent-600 text-white text-sm font-medium
+                             hover:bg-accent-700 disabled:opacity-40 transition-all active:scale-95 shrink-0"
+                >
+                  {sending ? '...' : '发送'}
+                </button>
+              </div>
+            ) : (
+              <p className="text-center text-sm text-slate-400 py-2">
+                🛑 工单已{currentOrder.status === 'RESOLVED' ? '解决' : '关闭'}，不再支持留言
+              </p>
+            )}
           </div>
         </div>
       </div>

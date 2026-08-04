@@ -330,4 +330,49 @@ public class WorkOrderService {
 
         return order;
     }
+
+    @Transactional
+    public WorkOrder reassignWorkOrder(Long orderId, Long operatorId,
+                                        String role, Long newAssigneeId) {
+        WorkOrder order = workOrderMapper.selectById(orderId);
+        if (order == null) {
+            throw new BusinessException(ResultCode.NOT_FOUND, "工单不存在");
+        }
+
+        boolean isAdmin = "admin".equals(role) || "hr".equals(role) || "teacher".equals(role);
+        if (!isAdmin) {
+            throw new BusinessException(ResultCode.FORBIDDEN, "只有管理员可以转派工单");
+        }
+
+        if (!WorkOrderStatus.PROCESSING.name().equals(order.getStatus())) {
+            throw new BusinessException(ResultCode.BAD_REQUEST, "只有处理中的工单可以转派");
+        }
+
+        // 验证新处理人存在且为管理员
+        User newAssignee = userMapper.selectById(newAssigneeId);
+        if (newAssignee == null) {
+            throw new BusinessException(ResultCode.NOT_FOUND, "目标管理员不存在");
+        }
+        if (!"admin".equals(newAssignee.getRole()) && !"hr".equals(newAssignee.getRole())
+            && !"teacher".equals(newAssignee.getRole())) {
+            throw new BusinessException(ResultCode.BAD_REQUEST, "只能转派给管理员");
+        }
+
+        Long oldAssigneeId = order.getAssigneeId();
+        order.setAssigneeId(newAssigneeId);
+        workOrderMapper.updateById(order);
+
+        // 通知新处理人
+        notificationService.notifyUser(
+            newAssigneeId,
+            "工单转派",
+            String.format("管理员将工单「%s」转派给您处理", order.getTitle()),
+            "/work-orders/" + order.getId()
+        );
+
+        messageService.addSystemMessage(orderId,
+            String.format("工单已转派给 %s（ID:%d）", newAssignee.getUsername(), newAssigneeId));
+
+        return order;
+    }
 }
