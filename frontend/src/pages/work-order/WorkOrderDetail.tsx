@@ -31,14 +31,20 @@ export default function WorkOrderDetail() {
   const [resolution, setResolution] = useState('');
   const chatEndRef = useRef<HTMLDivElement>(null);
 
+  const [detailError, setDetailError] = useState('');
+
   // Fetch detail
   const fetchDetail = useCallback(async () => {
     if (!id) return;
     setLoading(true);
+    setDetailError('');
     try {
       const res = await workOrderService.getDetail(id);
       setCurrentOrder(res.data.data);
-    } catch { /* handled */ }
+    } catch (err: any) {
+      const msg = err?.response?.data?.message || '';
+      if (msg) setDetailError(msg);
+    }
     finally { setLoading(false); }
   }, [id, setCurrentOrder]);
 
@@ -146,7 +152,10 @@ export default function WorkOrderDetail() {
   if (!currentOrder) {
     return (
       <div className="text-center py-20">
-        <p className="text-slate-500">工单不存在或无权查看</p>
+        <p className="text-slate-500">{detailError || '工单不存在或无权查看'}</p>
+        {detailError && detailError.includes('正在被') && (
+          <p className="text-amber-600 text-sm mt-2">🔄 该工单正在被其他管理员处理中</p>
+        )}
         <button onClick={() => navigate('/work-orders')} className="mt-4 text-accent-600 text-sm hover:underline">返回列表</button>
       </div>
     );

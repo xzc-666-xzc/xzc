@@ -60,6 +60,13 @@ public class WorkOrderService {
         return result;
     }
 
+    private String getAdminName(Long adminId) {
+        if (adminId == null) return "管理员";
+        User u = userMapper.selectById(adminId);
+        if (u == null) return "管理员";
+        return u.getRealName() != null ? u.getRealName() : u.getUsername();
+    }
+
     // ==================== 创建与查询 ====================
 
     @Transactional
@@ -159,6 +166,16 @@ public class WorkOrderService {
         }
 
         boolean isAdmin = "admin".equals(role) || "hr".equals(role) || "teacher".equals(role);
+
+        // 处理中的工单：非处理人的管理员不能查看
+        if (isAdmin && "PROCESSING".equals(order.getStatus())
+            && order.getAssigneeId() != null
+            && !userId.equals(order.getAssigneeId())
+            && !userId.equals(order.getSubmitterId())) {
+            throw new BusinessException(ResultCode.FORBIDDEN,
+                "该工单正在被 " + getAdminName(order.getAssigneeId()) + " 处理中，请等待处理完成");
+        }
+
         if (!isAdmin && !order.getSubmitterId().equals(userId)
             && !userId.equals(order.getAssigneeId())) {
             throw new BusinessException(ResultCode.FORBIDDEN, "无权查看此工单");
