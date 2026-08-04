@@ -5,6 +5,7 @@ import AIFloatingChat from '@/components/AIFloatingChat';
 import AISidebar from '@/components/AISidebar';
 import { aiChatStore } from '@/stores/aiChatStore';
 import { NEW_FEATURE_KEY, FEATURE_BADGE_MAP, UPDATE_HISTORY } from '@/config/features';
+import { notificationService } from '@/services/api';
 
 const candidateMenuItems = [
   { key: '/', icon: 'dashboard', label: '工作台' },
@@ -170,15 +171,50 @@ export default function MainLayout() {
   }, [navigate]);
 
   // ==================== 通知数据 ====================
-  const notifications = UPDATE_HISTORY.slice(0, 3);
-  const hasNew = notifications.length > readUpdates;
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [notifLoading, setNotifLoading] = useState(false);
+  const [notifList, setNotifList] = useState<Array<{ id: string; title: string; content: string; isRead: boolean; createdAt: string; link?: string }>>([]);
+
+  const fetchUnreadCount = useCallback(async () => {
+    try {
+      const res = await notificationService.getUnreadCount();
+      setUnreadCount((res.data?.data as any)?.count || 0);
+    } catch {}
+  }, []);
+
+  const fetchNotifList = useCallback(async () => {
+    setNotifLoading(true);
+    try {
+      const res = await notificationService.list({ page: 1, pageSize: 10 });
+      const data = (res.data?.data as any);
+      setNotifList((data?.records || []).map((n: any) => ({
+        id: n.id, title: n.title, content: n.content,
+        isRead: n.isRead, createdAt: n.createdAt, link: n.link,
+      })));
+    } catch {}
+    setNotifLoading(false);
+  }, []);
+
+  // 定时轮询未读数（每30秒）
+  useEffect(() => {
+    if (user) { fetchUnreadCount(); fetchNotifList(); }
+    const interval = setInterval(() => { if (user) fetchUnreadCount(); }, 30000);
+    return () => clearInterval(interval);
+  }, [user, fetchUnreadCount, fetchNotifList]);
+
+  const hasNew = unreadCount > 0;
 
   const handleBellClick = () => {
-    if (hasNew) {
-      localStorage.setItem('read_updates_count', String(notifications.length));
-      setReadUpdates(notifications.length);
-    }
     setShowNotifications(!showNotifications);
+    if (!showNotifications) fetchNotifList();
+  };
+
+  const handleMarkAllRead = async () => {
+    try {
+      await notificationService.markAllRead();
+      setUnreadCount(0);
+      setNotifList(prev => prev.map(n => ({ ...n, isRead: true })));
+    } catch {}
   };
 
   // 点击外部关闭
@@ -445,28 +481,46 @@ export default function MainLayout() {
                 title="通知">
                 {icons.bell}
                 {hasNew && (
-                  <span className="absolute top-1.5 right-1.5 w-2.5 h-2.5 rounded-full bg-rose-500 ring-2 ring-white animate-pulse" />
+                  <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] flex items-center justify-center
+                    rounded-full bg-rose-500 text-white text-[10px] font-bold px-1 ring-2 ring-white">
+                    {unreadCount > 99 ? '99+' : unreadCount}
+                  </span>
                 )}
               </button>
               {/* 通知下拉卡片 */}
               {showNotifications && (
                 <div className="absolute top-full mt-2 right-0 w-80 bg-white rounded-2xl shadow-card-elevated border border-slate-100 py-3 z-50 animate-scale-in overflow-hidden">
                   <div className="flex items-center justify-between px-4 mb-2">
-                    <h3 className="text-sm font-bold text-slate-800">📢 最近更新</h3>
-                    {!hasNew && <span className="text-[10px] text-slate-400">已读</span>}
+                    <h3 className="text-sm font-bold text-slate-800">🔔 通知</h3>
+                    <div className="flex items-center gap-2">
+                      {hasNew && (
+                        <button onClick={handleMarkAllRead} className="text-[10px] text-accent-600 hover:text-accent-700 font-medium">
+                          全部已读
+                        </button>
+                      )}
+                    </div>
                   </div>
-                  <div className="divide-y divide-slate-50">
-                    {notifications.length > 0 ? (
-                      notifications.map((n, i) => (
-                        <div key={i} className="px-4 py-2.5 hover:bg-slate-50 transition-colors">
-                          <p className="text-xs text-slate-500 mb-0.5">{n.date}</p>
-                          <p className="text-sm text-slate-700 leading-relaxed line-clamp-1" title={n.text}>{n.text}</p>
+                  <div className="divide-y divide-slate-50 max-h-80 overflow-auto">
+                    {notifLoading ? (
+                      <div className="px-4 py-8 text-center"><div className="w-5 h-5 border-2 border-accent-500 border-t-transparent rounded-full animate-spin mx-auto" /></div>
+                    ) : notifList.length > 0 ? (
+                      notifList.map((n) => (
+                        <div key={n.id}
+                          onClick={() => { if (n.link) navigate(n.link); }}
+                          className={"px-4 py-3 transition-colors cursor-pointer " + (n.isRead ? 'bg-white hover:bg-slate-50' : 'bg-amber-50/50 hover:bg-amber-50')}>
+                          <div className="flex items-center gap-2 mb-0.5">
+                            {!n.isRead && <span className="w-2 h-2 rounded-full bg-amber-500 shrink-0" />}
+                            <p className="text-sm font-semibold text-slate-800 truncate">{n.title}</p>
+                          </div>
+                          <p className="text-xs text-slate-500 leading-relaxed ml-4 line-clamp-2">{n.content}</p>
+                          <p className="text-[10px] text-slate-400 mt-1 ml-4">
+                            {n.createdAt ? new Date(n.createdAt).toLocaleString('zh-CN') : ''}
+                          </p>
                         </div>
                       ))
                     ) : (
                       <div className="px-4 py-8 text-center">
-                        <p className="text-sm text-slate-400">暂无最新动态</p>
-                        <p className="text-xs text-slate-300 mt-1">保持关注哦~</p>
+                        <p className="text-sm text-slate-400">暂无通知</p>
                       </div>
                     )}
                   </div>

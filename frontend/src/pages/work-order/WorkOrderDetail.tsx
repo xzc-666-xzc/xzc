@@ -155,8 +155,10 @@ export default function WorkOrderDetail() {
   const statusCfg = STATUS_CONFIG[currentOrder.status as WorkOrderStatus] || { label: currentOrder.status, color: 'bg-slate-100' };
   const typeCfg = TYPE_CONFIG[currentOrder.type as WorkOrderType] || { label: currentOrder.type, color: 'bg-slate-100' };
   const canSubmit = currentOrder.status === 'DRAFT' && !isAdmin;
+  const isAssignee = currentOrder.assignee?.id === user?.id;
   const canAccept = currentOrder.status === 'PENDING' && isAdmin;
-  const canResolve = currentOrder.status === 'PROCESSING' && isAdmin;
+  const canResolve = currentOrder.status === 'PROCESSING' && isAdmin && isAssignee;
+  const isOtherProcessing = currentOrder.status === 'PROCESSING' && isAdmin && !isAssignee;
   const canClose = (currentOrder.status === 'PENDING' && isAdmin) ||
                     currentOrder.status === 'PROCESSING' ||
                     currentOrder.status === 'RESOLVED';
@@ -191,7 +193,12 @@ export default function WorkOrderDetail() {
           {/* Meta */}
           <div className="space-y-3">
             <MetaItem label="提交人" value={currentOrder.submitter?.username} />
-            <MetaItem label="处理人" value={currentOrder.assignee?.username || '未分配'} />
+            <MetaItem label="处理人">
+              <span className={isOtherProcessing ? 'text-amber-600 font-semibold' : ''}>
+                {currentOrder.assignee?.username || '未分配'}
+                {isOtherProcessing && ' (处理中)'}
+              </span>
+            </MetaItem>
             <MetaItem label="优先级">
               <span className={`inline-block px-2 py-0.5 rounded text-xs font-medium ${
                 currentOrder.priority === 'URGENT' ? 'bg-red-100 text-red-700' :
