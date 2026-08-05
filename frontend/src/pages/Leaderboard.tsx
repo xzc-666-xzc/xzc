@@ -117,9 +117,9 @@ export default function Leaderboard() {
                   {/* Username */}
                   <div className="flex items-center gap-3">
                     <div className={`w-9 h-9 rounded-full flex items-center justify-center text-white text-sm font-bold shadow-md
-                      ${rank === 1 ? 'bg-gradient-to-br from-amber-400 to-orange-500' :
-                        rank === 2 ? 'bg-gradient-to-br from-slate-400 to-slate-500' :
-                        rank === 3 ? 'bg-gradient-to-br from-amber-600 to-amber-700' :
+                      ${rank === 1 ? 'bg-gradient-to-br from-amber-400 to-orange-500 ring-2 ring-amber-300 ring-offset-2 ring-offset-white shadow-glow-gold' :
+                        rank === 2 ? 'bg-gradient-to-br from-slate-400 to-slate-500 ring-2 ring-slate-300 ring-offset-2 ring-offset-white shadow-glow-silver' :
+                        rank === 3 ? 'bg-gradient-to-br from-amber-600 to-amber-700 ring-2 ring-amber-400 ring-offset-2 ring-offset-white shadow-glow-bronze' :
                         'bg-gradient-to-br from-slate-300 to-slate-400'}`}>
                       {entry.username?.[0]?.toUpperCase() || '?'}
                     </div>

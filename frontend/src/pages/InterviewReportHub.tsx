@@ -192,9 +192,15 @@ function ReportOverview({ history, navigate }: { history: HistoryRecord[]; navig
           </div>
         </div>
       ) : (
-        <div className="card p-12 text-center">
-          <p className="text-slate-400 text-sm mb-3">完成 2 次以上面试后将展示趋势图表</p>
-          <button onClick={() => navigate('/setup')} className="text-accent-600 text-sm font-semibold hover:text-accent-700 transition-colors">
+        <div className="card p-10 text-center">
+          <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-accent-100 to-brand-100 flex items-center justify-center">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-8 h-8 text-accent-400">
+              <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+            </svg>
+          </div>
+          <p className="text-ink-muted text-sm mb-1">完成 2 次以上面试后将展示趋势图表</p>
+          <p className="text-ink-muted text-xs mb-4">数据越多，分析越精准</p>
+          <button onClick={() => navigate('/setup')} className="btn-brand px-5 py-2.5 text-sm">
             开始第一次面试 →
           </button>
         </div>
@@ -213,21 +219,28 @@ function ReportOverview({ history, navigate }: { history: HistoryRecord[]; navig
           )}
         </div>
         <div className="space-y-2">
-          {history.slice(0, 3).map((r) => (
+          {history.slice(0, 5).map((r) => (
             <div key={r.id}
               onClick={() => r.status === 'completed' ? navigate(`/report/${r.id}`) : navigate(`/interview/${r.id}`)}
-              className="card-clickable card px-5 py-4 flex items-center gap-6">
+              className="card-clickable card px-5 py-4 flex items-center gap-4 group">
+              <div className="w-9 h-9 rounded-full bg-gradient-to-br from-accent-100 to-brand-100 flex items-center justify-center text-sm shrink-0">
+                {r.positionName?.includes('Java') ? '☕' : r.positionName?.includes('前端') ? '⚛️' : '💼'}
+              </div>
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-semibold text-slate-800 truncate">{r.positionName || '未命名面试'}</p>
-                <p className="text-xs text-slate-400 mt-1">{r.startedAt?.slice(0, 10) || '-'} · {r.questionCount || '?'} 题</p>
+                <p className="text-sm font-semibold text-ink-title truncate group-hover:text-accent-700 transition-colors">{r.positionName || '未命名面试'}</p>
+                <p className="text-xs text-ink-muted mt-0.5">{r.startedAt?.slice(0, 10) || '-'} · {r.questionCount || '?'} 题</p>
               </div>
               <DifficultyBadge diff={r.difficulty} />
               <div className="text-right shrink-0">
                 {r.score != null
                   ? <span className={`text-lg font-bold tabular-nums ${r.score >= 70 ? 'text-emerald-600' : r.score >= 50 ? 'text-amber-500' : 'text-rose-500'}`}>{r.score}</span>
-                  : <span className="text-sm text-slate-400">-</span>}
-                <p className="text-[10px] text-slate-400">分</p>
+                  : <span className="text-sm text-ink-muted">-</span>}
+                <p className="text-[10px] text-ink-muted">分</p>
               </div>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
+                className="w-4 h-4 text-slate-300 group-hover:text-accent-400 transition-colors shrink-0">
+                <polyline points="9 18 15 12 9 6"/>
+              </svg>
             </div>
           ))}
           {history.length === 0 && (

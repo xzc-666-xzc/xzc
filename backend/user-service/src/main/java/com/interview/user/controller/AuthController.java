@@ -76,8 +76,20 @@ public class AuthController {
             throw new BusinessException(ResultCode.CONFLICT, "该账号已存在");
         }
 
+        // HR和管理员注册需要管理员审批，求职者直接激活
+        boolean needApproval = "hr".equals(req.getRole()) || "admin".equals(req.getRole());
+        int initialStatus = needApproval ? 2 : 1;  // 2=待审批, 1=正常
+
         User user = userService.register(req.getUsername(), req.getRealName(),
-                req.getPassword(), req.getEmail(), req.getRole());
+                req.getPassword(), req.getEmail(), req.getRole(), initialStatus);
+
+        if (needApproval) {
+            Map<String, Object> data = Map.of(
+                    "pendingApproval", true,
+                    "message", "您的" + ("hr".equals(req.getRole()) ? "HR" : "管理员") + "账号已提交，请等待超级管理员审批后登录"
+            );
+            return R.ok(data);
+        }
 
         String token = jwtUtil.generateToken(user.getId(), user.getUsername(), user.getRole());
 

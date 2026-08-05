@@ -192,7 +192,7 @@ function WorkOrderCard({ order, onClick }: { order: WorkOrderListVO; onClick: ()
     <div
       onClick={onClick}
       className="bg-white rounded-2xl border border-slate-100 p-5 hover:shadow-card-elevated
-                 hover:border-accent-200 cursor-pointer transition-all duration-200 group"
+                 hover:border-accent-200 cursor-pointer transition-all duration-300 group card-glow"
     >
       <div className="flex items-start justify-between gap-4">
         <div className="flex-1 min-w-0">
@@ -209,7 +209,7 @@ function WorkOrderCard({ order, onClick }: { order: WorkOrderListVO; onClick: ()
               </span>
             ) : null}
           </div>
-          <h3 className="text-sm font-semibold text-slate-800 group-hover:text-accent-700 transition-colors truncate">
+          <h3 className="text-sm font-semibold text-ink-title group-hover:text-accent-700 transition-colors truncate">
             {order.title}
           </h3>
           <div className="flex items-center gap-4 mt-2 text-xs text-slate-400">

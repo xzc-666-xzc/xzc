@@ -29,6 +29,9 @@ public class UserService extends ServiceImpl<UserMapper, User> {
         if (user.getStatus() != null && user.getStatus() == 0) {
             throw new BusinessException(ResultCode.AUTH_FAILED, "该账号已被禁用，请联系管理员");
         }
+        if (user.getStatus() != null && user.getStatus() == 2) {
+            throw new BusinessException(ResultCode.PENDING_APPROVAL, "该账号正在等待管理员审批，审批通过后方可登录");
+        }
         if (!BCrypt.checkpw(password, user.getPassword())) {
             throw new BusinessException(ResultCode.AUTH_FAILED, "密码错误，请重新输入");
         }
@@ -40,13 +43,21 @@ public class UserService extends ServiceImpl<UserMapper, User> {
      */
     @Transactional
     public User register(String username, String realName, String password, String email, String role) {
+        return register(username, realName, password, email, role, 1);
+    }
+
+    /**
+     * 注册新用户（指定初始状态）
+     */
+    @Transactional
+    public User register(String username, String realName, String password, String email, String role, int initialStatus) {
         User user = new User();
         user.setUsername(username);
         user.setRealName(realName);
         user.setPassword(BCrypt.hashpw(password, BCrypt.gensalt()));
         user.setEmail(email);
         user.setRole(role);
-        user.setStatus(1);
+        user.setStatus(initialStatus);
         user.setInterviewStyle("friendly");
         user.setVoiceSpeed("normal");
 
@@ -126,6 +137,116 @@ public class UserService extends ServiceImpl<UserMapper, User> {
         if (body.containsKey("interviewStyle")) user.setInterviewStyle((String) body.get("interviewStyle"));
         if (body.containsKey("voiceSpeed")) user.setVoiceSpeed((String) body.get("voiceSpeed"));
 
+        this.updateById(user);
+    }
+
+    // ==================== 管理员用户管理 ====================
+
+    /**
+     * 获取所有用户列表（管理员）
+     */
+    public List<User> getAllUsers() {
+        return this.list(new LambdaQueryWrapper<User>()
+                .orderByDesc(User::getCreatedAt));
+    }
+
+    /**
+     * 获取待审批用户列表
+     */
+    public List<User> getPendingUsers() {
+        return this.list(new LambdaQueryWrapper<User>()
+                .eq(User::getStatus, 2)
+                .orderByDesc(User::getCreatedAt));
+    }
+
+    /**
+     * 审批通过用户
+     */
+    @Transactional
+    public void approveUser(Long userId) {
+        User user = this.getById(userId);
+        if (user == null) {
+            throw new BusinessException(ResultCode.NOT_FOUND, "用户不存在");
+        }
+        if (user.getStatus() != 2) {
+            throw new BusinessException(ResultCode.BAD_REQUEST, "该用户不在待审批状态");
+        }
+        user.setStatus(1);
+        this.updateById(user);
+    }
+
+    /**
+     * 拒绝/删除待审批用户
+     */
+    @Transactional
+    public void rejectUser(Long userId) {
+        User user = this.getById(userId);
+        if (user == null) {
+            throw new BusinessException(ResultCode.NOT_FOUND, "用户不存在");
+        }
+        if (user.getStatus() != 2) {
+            throw new BusinessException(ResultCode.BAD_REQUEST, "只能拒绝待审批状态的用户");
+        }
+        this.removeById(userId);
+    }
+
+    /**
+     * 冻结用户（禁用账号）
+     */
+    @Transactional
+    public void freezeUser(Long userId) {
+        User user = this.getById(userId);
+        if (user == null) {
+            throw new BusinessException(ResultCode.NOT_FOUND, "用户不存在");
+        }
+        if (user.getStatus() == 0) {
+            throw new BusinessException(ResultCode.BAD_REQUEST, "该账号已被冻结");
+        }
+        user.setStatus(0);
+        this.updateById(user);
+    }
+
+    /**
+     * 解冻用户（启用账号）
+     */
+    @Transactional
+    public void unfreezeUser(Long userId) {
+        User user = this.getById(userId);
+        if (user == null) {
+            throw new BusinessException(ResultCode.NOT_FOUND, "用户不存在");
+        }
+        if (user.getStatus() != 0) {
+            throw new BusinessException(ResultCode.BAD_REQUEST, "该账号未被冻结");
+        }
+        user.setStatus(1);
+        this.updateById(user);
+    }
+
+    /**
+     * 管理员删除用户（仅超级管理员可删除管理员/HR）
+     */
+    @Transactional
+    public void deleteUser(Long userId) {
+        User user = this.getById(userId);
+        if (user == null) {
+            throw new BusinessException(ResultCode.NOT_FOUND, "用户不存在");
+        }
+        this.removeById(userId);
+    }
+
+    /**
+     * 修改用户角色
+     */
+    @Transactional
+    public void changeUserRole(Long userId, String newRole) {
+        User user = this.getById(userId);
+        if (user == null) {
+            throw new BusinessException(ResultCode.NOT_FOUND, "用户不存在");
+        }
+        if (!List.of("candidate", "hr", "teacher", "admin").contains(newRole)) {
+            throw new BusinessException(ResultCode.BAD_REQUEST, "无效的角色类型");
+        }
+        user.setRole(newRole);
         this.updateById(user);
     }
 }

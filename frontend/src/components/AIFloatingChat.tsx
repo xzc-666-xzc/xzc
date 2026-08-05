@@ -135,8 +135,8 @@ export default function AIFloatingChat({ context }: AIFloatingChatProps) {
                 </div>
                 <div className={`max-w-[75%] rounded-2xl px-3.5 py-2.5 text-sm leading-relaxed ${
                   msg.role === 'ai'
-                    ? 'bg-slate-100 text-slate-700 rounded-tl-sm'
-                    : 'bg-indigo-600 text-white rounded-tr-sm'
+                    ? 'bg-[#F4F6F8] text-[#374151] rounded-tl-sm'
+                    : 'bg-gradient-to-r from-indigo-600 to-indigo-700 text-white rounded-tr-sm'
                 }`}>
                   <p className="whitespace-pre-wrap">{msg.text}</p>
                   <p className={`text-[10px] mt-1 ${msg.role === 'ai' ? 'text-slate-400' : 'text-indigo-200'}`}>

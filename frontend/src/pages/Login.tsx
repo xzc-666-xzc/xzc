@@ -2,25 +2,37 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { userService } from '@/services/api';
 import { useUserStore } from '@/stores';
+import '@/styles/login.css';
 
-/* ====== 注册表单校验规则 ====== */
-const DISPLAY_NAME_RE = /^[a-zA-Z0-9_一-龥]{2,16}$/;
+/* ====== 校验规则 ====== */
+const DISPLAY_NAME_RE = /^[a-zA-Z0-9_一-鿿]{2,16}$/;
 const ACCOUNT_RE = /^[a-zA-Z0-9]{3,20}$/;
-const VULGAR_WORDS = ['admin', 'root', 'test', 'fuck', 'shit', 'damn', 'ass', 'bitch', 'nmsl', 'sb', 'cao', '操', '草泥马', '傻逼', '妈的', '他妈', '你妈', '死', '杀', 'sb', '2b', '脑子', '垃圾', '废物'];
+const VULGAR_WORDS = ['admin', 'root', 'test', 'fuck', 'shit', 'damn', 'ass', 'bitch', 'nmsl', 'sb', 'cao'];
 const hasVulgar = (s: string) => VULGAR_WORDS.some(w => s.toLowerCase().includes(w.toLowerCase()));
-const hasChinese = (s: string) => /[一-龥]/.test(s);
+const hasChinese = (s: string) => /[一-鿿]/.test(s);
 
 type Role = 'candidate' | 'hr' | 'admin';
 type Tab = 'login' | 'register';
+type RegStep = 1 | 2;
 
-const roleOptions: { value: Role; label: string; desc: string }[] = [
-  { value: 'candidate', label: '求职者', desc: '参与模拟面试，提升面试技能' },
-  { value: 'hr', label: 'HR', desc: '评估候选人，定制面试题库' },
-  { value: 'admin', label: '管理员', desc: '系统管理与数据查看' },
+const roleOptions: { value: Role; label: string }[] = [
+  { value: 'candidate', label: '求职者' },
+  { value: 'hr', label: 'HR' },
+  { value: 'admin', label: '管理员' },
+];
+
+const POSITIONS = [
+  { id: 'pos-java-middle', name: 'Java后端开发', icon: '☕' },
+  { id: 'pos-fe-middle', name: '前端开发', icon: '⚛️' },
+  { id: 'pos-pm-junior', name: '产品经理', icon: '📱' },
+  { id: 'pos-hr-general', name: 'HR-通用面试', icon: '🤝' },
+  { id: 'pos-java-agent', name: 'JavaAgent开发', icon: '🔧' },
+  { id: 'pos-go', name: 'Go后端开发', icon: '🔷' },
 ];
 
 export default function LoginPage() {
   const [tab, setTab] = useState<Tab>('login');
+  // 登录
   const [loginUsername, setLoginUsername] = useState('');
   const [loginPassword, setLoginPassword] = useState('');
   const [loginShowPwd, setLoginShowPwd] = useState(false);
@@ -28,6 +40,8 @@ export default function LoginPage() {
   const [loginError, setLoginError] = useState('');
   const [loginUsernameError, setLoginUsernameError] = useState('');
   const [loginPasswordError, setLoginPasswordError] = useState('');
+  // 注册 Step 1
+  const [regStep, setRegStep] = useState<RegStep>(1);
   const [regDisplayName, setRegDisplayName] = useState('');
   const [regAccount, setRegAccount] = useState('');
   const [regPassword, setRegPassword] = useState('');
@@ -41,10 +55,13 @@ export default function LoginPage() {
   const [accountChecking, setAccountChecking] = useState(false);
   const [accountTaken, setAccountTaken] = useState(false);
   const checkTimerRef = useRef<ReturnType<typeof setTimeout>>();
+  // 注册 Step 2
+  const [selectedPosition, setSelectedPosition] = useState('');
 
   const navigate = useNavigate();
   const setAuth = useUserStore((s) => s.setAuth);
 
+  // ====== 账号查重 ======
   useEffect(() => {
     if (checkTimerRef.current) clearTimeout(checkTimerRef.current);
     setAccountTaken(false);
@@ -63,33 +80,32 @@ export default function LoginPage() {
     return () => { if (checkTimerRef.current) clearTimeout(checkTimerRef.current); };
   }, [regAccount]);
 
+  // ====== 校验函数 ======
   const validateDisplayName = useCallback((v: string) => {
     if (!v) { setDisplayNameError(''); return true; }
-    if (v.length < 2 || v.length > 16) { setDisplayNameError('用户名要求2-16位，支持中文、字母、数字、下划线；不可首尾带下划线，禁止低俗敏感词汇'); return false; }
-    if (!DISPLAY_NAME_RE.test(v)) { setDisplayNameError('用户名支持中文、字母、数字、下划线，不可含特殊符号'); return false; }
-    if (v.startsWith('_') || v.endsWith('_')) { setDisplayNameError('用户名不可首尾带下划线'); return false; }
-    if (hasVulgar(v)) { setDisplayNameError('用户名包含敏感词汇'); return false; }
-    setDisplayNameError('');
-    return true;
+    if (v.length < 2 || v.length > 16) { setDisplayNameError('2-16位，支持中文/字母/数字/下划线'); return false; }
+    if (!DISPLAY_NAME_RE.test(v)) { setDisplayNameError('仅支持中文、字母、数字、下划线'); return false; }
+    if (v.startsWith('_') || v.endsWith('_')) { setDisplayNameError('不可首尾带下划线'); return false; }
+    if (hasVulgar(v)) { setDisplayNameError('包含敏感词汇'); return false; }
+    setDisplayNameError(''); return true;
   }, []);
 
   const validateAccount = useCallback((v: string) => {
     if (!v) { setAccountError(''); return true; }
-    if (hasChinese(v)) { setAccountError('账号不可包含汉字，仅支持字母和数字组合'); return false; }
-    if (v.length < 3 || v.length > 20) { setAccountError('账号要求3-20位字母或数字'); return false; }
-    if (!ACCOUNT_RE.test(v)) { setAccountError('账号仅支持字母和数字的组合'); return false; }
+    if (hasChinese(v)) { setAccountError('账号不可包含汉字'); return false; }
+    if (v.length < 3 || v.length > 20) { setAccountError('3-20位字母或数字'); return false; }
+    if (!ACCOUNT_RE.test(v)) { setAccountError('仅支持字母和数字'); return false; }
     if (accountTaken) { setAccountError('该账号已被占用'); return false; }
-    setAccountError('');
-    return true;
+    setAccountError(''); return true;
   }, [accountTaken]);
 
   const validatePassword = useCallback((v: string) => {
     if (!v) { setPasswordError(''); return true; }
     if (v.length < 8 || v.length > 16) { setPasswordError('密码长度须8-16位'); return false; }
-    setPasswordError('');
-    return true;
+    setPasswordError(''); return true;
   }, []);
 
+  // ====== 登录 ======
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoginUsernameError(''); setLoginPasswordError(''); setLoginError('');
@@ -104,23 +120,29 @@ export default function LoginPage() {
       navigate(isAdmin ? '/admin' : '/', { replace: true });
     } catch (err: any) {
       const msg: string = err?.response?.data?.message || err?.message || '登录失败';
-      if (msg.includes('不存在')) { setLoginUsernameError(msg); }
-      else if (msg.includes('密码') || msg.includes('password')) { setLoginPasswordError(msg); }
-      else if (msg.includes('禁用')) { setLoginUsernameError(msg); }
-      else { setLoginError(msg); }
+      if (msg.includes('不存在')) setLoginUsernameError(msg);
+      else if (msg.includes('密码')) setLoginPasswordError(msg);
+      else if (msg.includes('禁用')) setLoginUsernameError(msg);
+      else setLoginError(msg);
     } finally { setLoginLoading(false); }
   };
 
-  const handleRegister = async (e: React.FormEvent) => {
-    e.preventDefault();
+  // ====== 注册 Step 1 → Step 2 ======
+  const handleRegNext = () => {
     const dnValid = validateDisplayName(regDisplayName);
     const acValid = validateAccount(regAccount);
     const pwValid = validatePassword(regPassword);
-    if (!dnValid || !acValid || !pwValid) return;
     if (!regDisplayName) { setDisplayNameError('请输入用户名'); return; }
     if (!regAccount) { setAccountError('请输入账号'); return; }
     if (!regPassword) { setPasswordError('请输入密码'); return; }
+    if (!dnValid || !acValid || !pwValid) return;
     if (accountTaken) { setAccountError('该账号已被占用'); return; }
+    setRegError('');
+    setRegStep(2);
+  };
+
+  // ====== 注册最终提交 ======
+  const handleRegister = async () => {
     setRegError(''); setRegLoading(true);
     try {
       const res = await userService.register({
@@ -128,384 +150,319 @@ export default function LoginPage() {
         password: regPassword,
         email: `${regAccount.trim()}@interview.com`, role: regRole,
       });
-      const { token, user } = res.data.data as { token: string; user: { role: string } };
+      const resData = res.data.data as { token?: string; user?: { role: string }; pendingApproval?: boolean; message?: string };
+      if (resData?.pendingApproval) {
+        alert(resData.message || '您的账号已提交审批，请等待超级管理员审批后登录');
+        setTab('login'); setRegStep(1);
+        return;
+      }
+      const { token, user } = resData as { token: string; user: { role: string } };
       setAuth(user as never, token);
-      const isAdmin = user.role === 'admin' || user.role === 'hr';
+      const isAdmin = user.role === 'admin' || user.role === 'hr' || user.role === 'teacher';
       navigate(isAdmin ? '/admin' : '/', { replace: true });
     } catch (err: any) {
-      const msg = err?.response?.data?.message || err?.message || '注册失败，请重试';
-      setRegError(msg);
+      setRegError(err?.response?.data?.message || err?.message || '注册失败');
+      setRegStep(1);
     } finally { setRegLoading(false); }
   };
 
   const switchTab = (t: Tab) => {
-    setTab(t); setLoginError(''); setLoginUsernameError(''); setLoginPasswordError('');
+    setTab(t); setRegStep(1);
+    setLoginError(''); setLoginUsernameError(''); setLoginPasswordError('');
     setRegError(''); setDisplayNameError(''); setAccountError(''); setPasswordError('');
+    setSelectedPosition('');
   };
 
   const inputClass = (hasError: boolean) =>
-    `w-full pl-10 pr-4 py-3 bg-slate-800/50 border rounded-xl text-slate-100 placeholder-slate-500
-     outline-none transition-all duration-200 text-sm
-     ${hasError
-       ? 'border-rose-500/60 focus:border-rose-500 focus:ring-2 focus:ring-rose-500/20'
-       : 'border-slate-600/40 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/25'
-     }`;
+    `login-input ${hasError ? 'login-input--error' : ''}`;
 
   return (
-    <div className="h-screen flex bg-[#0a0e17] overflow-hidden">
-      {/* ===== 左侧品牌区 ===== */}
-      <div className="hidden lg:flex w-[42%] xl:w-[45%] relative overflow-hidden bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900">
-        {/* 丰富背景 */}
-        <div className="absolute inset-0 overflow-hidden">
-          <div className="absolute inset-0 opacity-[0.04]"
-            style={{ backgroundImage: 'radial-gradient(circle at 25% 30%, rgba(99,102,241,0.5) 0px, transparent 1px), radial-gradient(circle at 75% 60%, rgba(139,92,246,0.4) 0px, transparent 1px)', backgroundSize: '40px 40px' }} />
-          <div className="absolute top-0 left-0 w-[500px] h-[500px] bg-indigo-600/20 rounded-full blur-[150px] -translate-x-1/2 -translate-y-1/3" />
-          <div className="absolute bottom-0 right-0 w-[400px] h-[400px] bg-purple-600/20 rounded-full blur-[130px] translate-x-1/3 translate-y-1/3" />
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[350px] h-[350px] bg-indigo-500/10 rounded-full blur-[100px]" />
-        </div>
+    <div className="login-page">
+      {/* ================================================================
+          左侧品牌区 (60%) — 太空蓝紫渐变 + 网格点阵 + 大字排版
+          ================================================================ */}
+      <div className="login-brand">
+        <div className="login-brand__glow login-brand__glow--top" />
+        <div className="login-brand__glow login-brand__glow--mid" />
+        <div className="login-brand__glow login-brand__glow--bottom" />
 
-        <div className="relative z-10 flex flex-col h-full p-10 xl:p-12">
+        <div className="login-brand__hero">
           {/* Logo */}
-          <div className="flex items-center gap-3.5 shrink-0">
-            <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-indigo-400 to-purple-500 flex items-center justify-center shadow-xl shadow-indigo-500/30 ring-1 ring-white/20">
-              <svg viewBox="0 0 24 24" fill="white" className="w-6 h-6">
-                <polygon points="5,3 19,12 5,21" />
-              </svg>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 14, flexShrink: 0 }}>
+            <div style={{ width: 48, height: 48, borderRadius: 16, background: 'linear-gradient(135deg, #6366F1, #8B5CF6)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 8px 32px rgba(99,102,241,0.35), 0 0 0 1px rgba(255,255,255,0.15)' }}>
+              <svg viewBox="0 0 24 24" fill="white" style={{ width: 22, height: 22 }}><polygon points="5,3 19,12 5,21" /></svg>
             </div>
             <div>
-              <h1 className="text-white font-extrabold text-2xl tracking-tight">智面</h1>
-              <p className="text-indigo-300/50 text-[11px] font-medium tracking-wide">SMART INTERVIEW PLATFORM</p>
+              <h1 style={{ color: 'white', fontSize: 26, fontWeight: 800, letterSpacing: '-0.02em', lineHeight: 1.2 }}>智面</h1>
+              <p style={{ color: 'rgba(165,180,252,0.45)', fontSize: 10, fontWeight: 500, letterSpacing: '0.15em' }}>SMART INTERVIEW</p>
             </div>
           </div>
 
-          {/* 主视觉：大号 AI 面试场景 */}
-          <div className="flex-1 flex flex-col justify-center gap-5 py-6 min-h-0">
-            {/* Hero 标题 */}
-            <div className="mb-2">
-              <h2 className="text-white/90 font-extrabold text-[28px] leading-tight tracking-tight">
-                AI 驱动的<br />下一代<br /><span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-300 to-purple-300">模拟面试平台</span>
-              </h2>
-              <p className="text-indigo-300/40 text-xs mt-3 leading-relaxed max-w-[85%]">
-                融合大语言模型 · 多模态交互 · 五维智能评测
-              </p>
-            </div>
-
-            {/* 面试流程示意卡片 */}
-            <div className="space-y-3">
-              {/* 卡片 1：创建面试 */}
-              <div className="bg-white/[0.06] backdrop-blur rounded-2xl p-4 border border-white/[0.08] flex items-center gap-4 hover:bg-white/[0.09] transition-colors group">
-                <div className="w-10 h-10 rounded-xl bg-indigo-500/20 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-5 h-5 text-indigo-400">
-                    <path d="M12 5v14M5 12h14" />
-                  </svg>
-                </div>
-                <div className="min-w-0">
-                  <p className="text-white/80 text-sm font-semibold">创建面试</p>
-                  <p className="text-white/25 text-[11px] truncate">选择岗位与难度，一键生成专属面试</p>
-                </div>
-                <span className="ml-auto text-white/15 text-xs font-mono shrink-0">01</span>
-              </div>
-
-              {/* 卡片 2：AI 面试官提问 */}
-              <div className="bg-white/[0.06] backdrop-blur rounded-2xl p-4 border border-white/[0.08] flex items-center gap-4 hover:bg-white/[0.09] transition-colors group">
-                <div className="w-10 h-10 rounded-xl bg-purple-500/20 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-5 h-5 text-purple-400">
-                    <circle cx="12" cy="12" r="10" /><polygon points="10,8 16,12 10,16" fill="currentColor" opacity="0.3" />
-                  </svg>
-                </div>
-                <div className="min-w-0">
-                  <p className="text-white/80 text-sm font-semibold">AI 智能提问</p>
-                  <p className="text-white/25 text-[11px] truncate">大模型驱动，精准匹配岗位考点</p>
-                </div>
-                <span className="ml-auto text-white/15 text-xs font-mono shrink-0">02</span>
-              </div>
-
-              {/* 卡片 3：多维度评测 */}
-              <div className="bg-white/[0.06] backdrop-blur rounded-2xl p-4 border border-white/[0.08] flex items-center gap-4 hover:bg-white/[0.09] transition-colors group">
-                <div className="w-10 h-10 rounded-xl bg-emerald-500/20 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-5 h-5 text-emerald-400">
-                    <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
-                  </svg>
-                </div>
-                <div className="min-w-0">
-                  <p className="text-white/80 text-sm font-semibold">五维智能评测</p>
-                  <p className="text-white/25 text-[11px] truncate">内容·逻辑·深度·表达·STAR 全方位评分</p>
-                </div>
-                <span className="ml-auto text-white/15 text-xs font-mono shrink-0">03</span>
-              </div>
-
-              {/* 卡片 4：生成报告 */}
-              <div className="bg-white/[0.06] backdrop-blur rounded-2xl p-4 border border-white/[0.08] flex items-center gap-4 hover:bg-white/[0.09] transition-colors group">
-                <div className="w-10 h-10 rounded-xl bg-amber-500/20 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-5 h-5 text-amber-400">
-                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" /><line x1="16" y1="13" x2="8" y2="13" /><line x1="16" y1="17" x2="8" y2="17" />
-                  </svg>
-                </div>
-                <div className="min-w-0">
-                  <p className="text-white/80 text-sm font-semibold">详细报告生成</p>
-                  <p className="text-white/25 text-[11px] truncate">雷达图分析 + 逐题详解 + 改进建议</p>
-                </div>
-                <span className="ml-auto text-white/15 text-xs font-mono shrink-0">04</span>
-              </div>
-            </div>
-
-            {/* 底部亮点数据条 */}
-            <div className="flex gap-3 mt-2">
-              <div className="flex-1 bg-white/[0.05] backdrop-blur rounded-2xl p-3 border border-white/[0.06] text-center">
-                <p className="text-white/70 font-extrabold text-lg">50+</p>
-                <p className="text-white/25 text-[10px]">覆盖岗位</p>
-              </div>
-              <div className="flex-1 bg-white/[0.05] backdrop-blur rounded-2xl p-3 border border-white/[0.06] text-center">
-                <p className="text-white/70 font-extrabold text-lg">3 种</p>
-                <p className="text-white/25 text-[10px]">交互模式</p>
-              </div>
-              <div className="flex-1 bg-white/[0.05] backdrop-blur rounded-2xl p-3 border border-white/[0.06] text-center">
-                <p className="text-white/70 font-extrabold text-lg">5 维</p>
-                <p className="text-white/25 text-[10px]">评分体系</p>
-              </div>
-              <div className="flex-1 bg-white/[0.05] backdrop-blur rounded-2xl p-3 border border-white/[0.06] text-center">
-                <p className="text-white/70 font-extrabold text-lg">500+</p>
-                <p className="text-white/25 text-[10px]">题库储备</p>
-              </div>
-            </div>
-          </div>
-
-          {/* 底部标识 */}
-          <div className="pt-4 border-t border-white/[0.06] shrink-0">
-            <p className="text-white/15 text-[10px] text-center tracking-widest">
-              POWERED BY AI · 专业模拟 · 精准评测
+          {/* Hero 大标题 */}
+          <div style={{ marginTop: 48 }}>
+            <h2>
+              AI 驱动的<br />下一代<br /><span>模拟面试平台</span>
+            </h2>
+            <p style={{ color: 'rgba(255,255,255,0.28)', fontSize: 13, marginTop: 12, lineHeight: 1.6 }}>
+              融合大语言模型 · 多模态交互 · 五维智能评测
             </p>
+          </div>
+
+          {/* 三大卖点 */}
+          <div className="login-feature-list">
+            {[
+              { icon: '🤖', title: 'AI 大模型驱动', desc: '基于面试岗位实时生成专属题目，拒绝千篇一律' },
+              { icon: '📊', title: '多维智能评测', desc: '雷达图精准定位能力与短板，五维量化分析' },
+              { icon: '🎯', title: '千人千面训练', desc: '针对薄弱项定制提分策略，精准靶向提升' },
+            ].map(f => (
+              <div key={f.title} className="login-feature-item">
+                <div className="login-feature-item__icon">{f.icon}</div>
+                <div className="login-feature-item__text">
+                  <h4>{f.title}</h4>
+                  <p>{f.desc}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* 底部数据面板 */}
+          <div className="login-stats-bar">
+            {[
+              { v: '3,245+', l: '累计面试' },
+              { v: '50+', l: '覆盖岗位' },
+              { v: '3 种', l: '交互模式' },
+              { v: '500+', l: '题库储备' },
+            ].map(s => (
+              <div key={s.l} className="login-stat-card">
+                <p className="login-stat-card__value">{s.v}</p>
+                <p className="login-stat-card__label">{s.l}</p>
+              </div>
+            ))}
+          </div>
+
+          <div style={{ paddingTop: 16, borderTop: '1px solid rgba(255,255,255,0.05)', textAlign: 'center', flexShrink: 0 }}>
+            <p style={{ color: 'rgba(255,255,255,0.12)', fontSize: 10, letterSpacing: '0.2em' }}>POWERED BY AI · 专业模拟 · 精准评测</p>
           </div>
         </div>
       </div>
 
-      {/* ===== 右侧表单 ===== */}
-      <div className="flex-1 flex items-center justify-center bg-[#0a0e17] px-6 sm:px-12 lg:px-16">
-        <div className="w-full max-w-[420px]">
+      {/* ================================================================
+          右侧操作区 (40%) — Glassmorphism 玻璃态
+          ================================================================ */}
+      <div className="login-panel">
+        <div className="login-glass-card">
 
-          {/* Tab switch */}
-          <div className="flex bg-white/5 rounded-xl p-1.5 mb-10 backdrop-blur-sm">
-            <button
-              onClick={() => switchTab('login')}
-              className={`flex-1 py-3 rounded-lg text-sm font-semibold transition-all duration-200
-                ${tab === 'login'
-                  ? 'bg-gradient-to-r from-indigo-500 to-indigo-600 text-white shadow-lg shadow-indigo-500/20'
-                  : 'text-slate-400 hover:text-slate-200'}`}
-            >登录</button>
-            <button
-              onClick={() => switchTab('register')}
-              className={`flex-1 py-3 rounded-lg text-sm font-semibold transition-all duration-200
-                ${tab === 'register'
-                  ? 'bg-gradient-to-r from-indigo-500 to-indigo-600 text-white shadow-lg shadow-indigo-500/20'
-                  : 'text-slate-400 hover:text-slate-200'}`}
-            >注册</button>
+          {/* 胶囊 Tab */}
+          <div className="login-tab-bar">
+            <button onClick={() => switchTab('login')} className={`login-tab-btn ${tab === 'login' ? 'login-tab-btn--active' : ''}`}>登录</button>
+            <button onClick={() => switchTab('register')} className={`login-tab-btn ${tab === 'register' ? 'login-tab-btn--active' : ''}`}>注册</button>
           </div>
 
-          {/* ===== Login Form ===== */}
+          {/* ====== Login Form ====== */}
           {tab === 'login' && (
             <div className="animate-fade-in">
-              <div className="mb-8">
-                <h2 className="text-2xl font-extrabold text-white tracking-tight">欢迎回来 👋</h2>
-                <p className="text-slate-400 text-sm mt-2">登录你的账号，继续模拟面试之旅</p>
+              <div style={{ marginBottom: 28 }}>
+                <h2 style={{ fontSize: 24, fontWeight: 800, color: '#F1F5F9', letterSpacing: '-0.02em' }}>欢迎回来 👋</h2>
+                <p style={{ fontSize: 13, color: '#94A3B8', marginTop: 6 }}>登录你的账号，继续模拟面试之旅</p>
               </div>
 
-              <form onSubmit={handleLogin} className="space-y-5" noValidate autoComplete="on">
+              <form onSubmit={handleLogin} noValidate autoComplete="on">
                 {loginError && (
-                  <div className="bg-rose-500/10 border border-rose-500/20 text-rose-400 text-sm px-4 py-3.5 rounded-xl animate-fade-in flex items-center gap-2">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4 shrink-0"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                  <div style={{ background: 'rgba(244,63,94,0.10)', border: '1px solid rgba(244,63,94,0.20)', color: '#F87171', fontSize: 13, padding: '12px 16px', borderRadius: 14, marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: 16, height: 16, flexShrink: 0 }}><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
                     {loginError}
                   </div>
                 )}
 
-                <div>
-                  <label className="block text-sm font-medium text-slate-300 mb-2">账号</label>
-                  <div className="relative">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"
-                      className="w-5 h-5 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500">
-                      <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" />
-                    </svg>
-                    <input type="text" value={loginUsername}
-                      onChange={(e) => { setLoginUsername(e.target.value); setLoginUsernameError(''); }}
-                      placeholder="请输入账号" autoComplete="username" name="login-username"
+                <div className="login-input-group">
+                  <label className="login-input-label">账号</label>
+                  <div className="login-input-wrap">
+                    <span className="login-input-wrap__icon">👤</span>
+                    <input type="text" value={loginUsername} onChange={e => { setLoginUsername(e.target.value); setLoginUsernameError(''); }}
+                      placeholder="请输入账号" autoComplete="username"
                       className={inputClass(!!loginUsernameError)} />
                   </div>
-                  {loginUsernameError && <p className="text-rose-400 text-xs mt-1.5 ml-1 animate-fade-in">{loginUsernameError}</p>}
+                  {loginUsernameError && <p className="login-field-hint login-field-hint--error">{loginUsernameError}</p>}
                 </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-slate-300 mb-2">密码</label>
-                  <div className="relative">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"
-                      className="w-5 h-5 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500 z-10">
-                      <rect x="3" y="11" width="18" height="11" rx="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" />
-                    </svg>
+                <div className="login-input-group">
+                  <label className="login-input-label">密码</label>
+                  <div className="login-input-wrap">
+                    <span className="login-input-wrap__icon">🔒</span>
                     <input type={loginShowPwd ? 'text' : 'password'} value={loginPassword}
-                      onChange={(e) => { setLoginPassword(e.target.value); setLoginPasswordError(''); }}
-                      placeholder="请输入密码" autoComplete="current-password" name="login-password"
-                      className={`${inputClass(!!loginPasswordError)} pr-12`} />
-                    <button type="button"
-                      onMouseDown={(e) => { e.preventDefault(); setLoginShowPwd(!loginShowPwd); }}
-                      className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300
-                                 transition-colors cursor-pointer select-none z-10 p-0.5"
-                      tabIndex={-1}>
+                      onChange={e => { setLoginPassword(e.target.value); setLoginPasswordError(''); }}
+                      placeholder="请输入密码" autoComplete="current-password"
+                      className={inputClass(!!loginPasswordError)} />
+                    <button type="button" onMouseDown={e => { e.preventDefault(); setLoginShowPwd(!loginShowPwd); }}
+                      className="login-pwd-toggle" tabIndex={-1}>
                       {loginShowPwd ? (
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-5 h-5"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94" /><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19" /><line x1="1" y1="1" x2="23" y2="23" /></svg>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: 18, height: 18 }}><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
                       ) : (
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-5 h-5"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" /><circle cx="12" cy="12" r="3" /></svg>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: 18, height: 18 }}><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
                       )}
                     </button>
                   </div>
-                  {loginPasswordError && <p className="text-rose-400 text-xs mt-1.5 ml-1 animate-fade-in">{loginPasswordError}</p>}
+                  {loginPasswordError && <p className="login-field-hint login-field-hint--error">{loginPasswordError}</p>}
                 </div>
 
-                <button type="submit" disabled={loginLoading}
-                  className="w-full bg-gradient-to-r from-indigo-500 to-purple-600 text-white py-3.5 rounded-xl
-                             font-semibold text-[15px] hover:from-indigo-600 hover:to-purple-700
-                             hover:shadow-xl hover:shadow-indigo-500/25
-                             active:scale-[0.98] transition-all duration-200 disabled:opacity-60
-                             flex items-center justify-center gap-2 cursor-pointer select-none">
-                  {loginLoading ? (
-                    <><svg className="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" className="opacity-25"/><path d="M4 12a8 8 0 018-8" stroke="currentColor" strokeWidth="4" className="opacity-75"/></svg>登录中...</>
-                  ) : '登录'}
+                <button type="submit" disabled={loginLoading} className="login-submit-btn">
+                  {loginLoading ? <><svg className="animate-spin" viewBox="0 0 24 24" fill="none" style={{ width: 16, height: 16 }}><circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" opacity="0.25"/><path d="M4 12a8 8 0 018-8" stroke="currentColor" strokeWidth="4" opacity="0.75"/></svg>登录中...</> : '✨ 立即登录'}
                 </button>
               </form>
 
-              <div className="mt-10 pt-6 border-t border-white/5">
-                <p className="text-xs text-slate-500 mb-3 text-center">支持多角色登录</p>
-                <div className="grid grid-cols-3 gap-2">
-                  {roleOptions.map((r) => (
-                    <div key={r.value} className="bg-white/5 border border-white/5 rounded-xl px-3 py-3 text-center select-none">
-                      <p className="text-sm font-medium text-slate-300">{r.label}</p>
-                      <p className="text-[10px] text-slate-500 mt-0.5">{r.desc}</p>
-                    </div>
+              {/* 角色提示 */}
+              <div style={{ marginTop: 32, paddingTop: 20, borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+                <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.20)', textAlign: 'center', marginBottom: 12 }}>支持多角色登录</p>
+                <div className="login-role-row">
+                  {roleOptions.map(r => (
+                    <div key={r.value} className="login-role-chip">{r.label}</div>
                   ))}
                 </div>
               </div>
             </div>
           )}
 
-          {/* ===== Register Form ===== */}
+          {/* ====== Register Form — 两步流程 ====== */}
           {tab === 'register' && (
-            <div className="animate-fade-in" key="register-form">
-              <div className="mb-8">
-                <h2 className="text-2xl font-extrabold text-white tracking-tight">创建账号 🚀</h2>
-                <p className="text-slate-400 text-sm mt-2">开启你的 AI 模拟面试之旅</p>
+            <div className="animate-fade-in" key={`reg-step-${regStep}`}>
+              {/* 步骤指示器 */}
+              <div className="login-step-indicator">
+                <div className={`login-step-dot ${regStep >= 1 ? 'login-step-dot--active' : ''} ${regStep > 1 ? 'login-step-dot--done' : ''}`} />
+                <div className={`login-step-line ${regStep > 1 ? 'login-step-line--done' : ''}`} />
+                <div className={`login-step-dot ${regStep >= 2 ? 'login-step-dot--active' : ''}`} />
               </div>
 
-              <form onSubmit={handleRegister} className="space-y-4" noValidate>
-                {regError && (
-                  <div className="bg-rose-500/10 border border-rose-500/20 text-rose-400 text-sm px-4 py-3.5 rounded-xl animate-fade-in flex items-center gap-2">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4 shrink-0"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-                    {regError}
+              {/* ====== Step 1: 基础信息 ====== */}
+              {regStep === 1 && (
+                <>
+                  <div style={{ marginBottom: 24 }}>
+                    <h2 style={{ fontSize: 24, fontWeight: 800, color: '#F1F5F9', letterSpacing: '-0.02em' }}>创建账号 🚀</h2>
+                    <p style={{ fontSize: 13, color: '#94A3B8', marginTop: 6 }}>开启你的 AI 模拟面试之旅</p>
                   </div>
-                )}
 
-                {/* Username */}
-                <div>
-                  <label className="block text-sm font-medium text-slate-300 mb-2">用户名</label>
-                  <div className="relative">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"
-                      className="w-5 h-5 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500">
-                      <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" />
-                    </svg>
-                    <input type="text" value={regDisplayName}
-                      onChange={(e) => { setRegDisplayName(e.target.value); validateDisplayName(e.target.value); }}
-                      onBlur={(e) => validateDisplayName(e.target.value)}
-                      placeholder="输入用户名（2-16位）" maxLength={16}
-                      className={inputClass(!!displayNameError)} />
+                  {regError && (
+                    <div style={{ background: 'rgba(244,63,94,0.10)', border: '1px solid rgba(244,63,94,0.20)', color: '#F87171', fontSize: 13, padding: '12px 16px', borderRadius: 14, marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: 16, height: 16, flexShrink: 0 }}><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                      {regError}
+                    </div>
+                  )}
+
+                  {/* 用户名 */}
+                  <div className="login-input-group">
+                    <label className="login-input-label">用户名</label>
+                    <div className="login-input-wrap">
+                      <span className="login-input-wrap__icon">👤</span>
+                      <input type="text" value={regDisplayName} onChange={e => { setRegDisplayName(e.target.value); validateDisplayName(e.target.value); }}
+                        onBlur={e => validateDisplayName(e.target.value)} placeholder="输入用户名（2-16位）" maxLength={16}
+                        className={inputClass(!!displayNameError)} />
+                    </div>
+                    {displayNameError && <p className="login-field-hint login-field-hint--error">{displayNameError}</p>}
                   </div>
-                  {displayNameError && <p className="text-rose-400 text-xs mt-1.5 ml-1 animate-fade-in">{displayNameError}</p>}
-                </div>
 
-                {/* Account */}
-                <div>
-                  <label className="block text-sm font-medium text-slate-300 mb-2">账号</label>
-                  <div className="relative">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"
-                      className="w-5 h-5 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500">
-                      <rect x="3" y="11" width="18" height="11" rx="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" />
-                    </svg>
-                    <input type="text" value={regAccount}
-                      onChange={(e) => setRegAccount(e.target.value)}
-                      onBlur={(e) => { const t = e.target.value.trim(); setRegAccount(t); validateAccount(t); }}
-                      placeholder="请输入账号" maxLength={20} autoComplete="off" name="reg-account"
-                      className={`${inputClass(!!accountError)} pr-10`} />
-                    {accountChecking && (
-                      <div className="absolute right-3.5 top-1/2 -translate-y-1/2">
-                        <svg className="animate-spin w-4 h-4 text-indigo-400" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" className="opacity-25"/><path d="M4 12a8 8 0 018-8" stroke="currentColor" strokeWidth="4" className="opacity-75"/></svg>
-                      </div>
-                    )}
-                    {!accountChecking && regAccount.length >= 3 && ACCOUNT_RE.test(regAccount) && !accountTaken && (
-                      <svg viewBox="0 0 24 24" fill="none" stroke="#34D399" strokeWidth="3" className="w-4 h-4 absolute right-3.5 top-1/2 -translate-y-1/2"><polyline points="20 6 9 17 4 12"/></svg>
-                    )}
-                  </div>
-                  {accountError && <p className="text-rose-400 text-xs mt-1.5 ml-1 animate-fade-in">{accountError}</p>}
-                </div>
-
-                {/* Password */}
-                <div>
-                  <label className="block text-sm font-medium text-slate-300 mb-2">密码</label>
-                  <div className="relative">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"
-                      className="w-5 h-5 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500 z-10">
-                      <rect x="3" y="11" width="18" height="11" rx="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" />
-                    </svg>
-                    <input type={regShowPwd ? 'text' : 'password'} value={regPassword}
-                      onChange={(e) => { setRegPassword(e.target.value); validatePassword(e.target.value); }}
-                      onBlur={(e) => validatePassword(e.target.value)}
-                      placeholder="请输入密码（8-16位）" maxLength={16} autoComplete="new-password" name="reg-password"
-                      className={`${inputClass(!!passwordError)} pr-12`} />
-                    <button type="button"
-                      onMouseDown={(e) => { e.preventDefault(); setRegShowPwd(!regShowPwd); }}
-                      className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300
-                                 transition-colors cursor-pointer select-none z-10 p-0.5"
-                      tabIndex={-1}>
-                      {regShowPwd ? (
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-5 h-5"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94" /><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19" /><line x1="1" y1="1" x2="23" y2="23" /></svg>
-                      ) : (
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-5 h-5"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" /><circle cx="12" cy="12" r="3" /></svg>
+                  {/* 账号 */}
+                  <div className="login-input-group">
+                    <label className="login-input-label">账号</label>
+                    <div className="login-input-wrap">
+                      <span className="login-input-wrap__icon">🔑</span>
+                      <input type="text" value={regAccount} onChange={e => setRegAccount(e.target.value)}
+                        onBlur={e => { const t = e.target.value.trim(); setRegAccount(t); validateAccount(t); }}
+                        placeholder="输入账号" maxLength={20} autoComplete="off"
+                        className={inputClass(!!accountError)} />
+                      {accountChecking && (
+                        <div style={{ position: 'absolute', right: 14, top: '50%', transform: 'translateY(-50%)' }}>
+                          <svg className="animate-spin" viewBox="0 0 24 24" fill="none" style={{ width: 16, height: 16, color: '#818CF8' }}><circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" opacity="0.25"/><path d="M4 12a8 8 0 018-8" stroke="currentColor" strokeWidth="4" opacity="0.75"/></svg>
+                        </div>
                       )}
-                    </button>
+                      {!accountChecking && regAccount.length >= 3 && ACCOUNT_RE.test(regAccount) && !accountTaken && (
+                        <svg viewBox="0 0 24 24" fill="none" stroke="#34D399" strokeWidth="3" style={{ width: 16, height: 16, position: 'absolute', right: 14, top: '50%', transform: 'translateY(-50%)' }}><polyline points="20 6 9 17 4 12"/></svg>
+                      )}
+                    </div>
+                    {accountError && (
+                      <p className="login-field-hint login-field-hint--error">
+                        {accountTaken ? <>{accountError}，去 <a onClick={() => switchTab('login')}>登录？</a></> : accountError}
+                      </p>
+                    )}
                   </div>
-                  {passwordError && <p className="text-rose-400 text-xs mt-1.5 ml-1 animate-fade-in">{passwordError}</p>}
-                </div>
 
-                {/* Role */}
-                <div>
-                  <label className="block text-sm font-medium text-slate-300 mb-3">选择角色</label>
-                  <div className="grid grid-cols-3 gap-2">
-                    {roleOptions.map((opt) => (
-                      <button key={opt.value} type="button" onClick={() => setRegRole(opt.value)}
-                        className={`flex flex-col items-center gap-1.5 p-3 rounded-xl border transition-all duration-200 cursor-pointer select-none
-                          ${regRole === opt.value
-                            ? 'border-indigo-500 bg-indigo-500/10 text-indigo-300 shadow-sm'
-                            : 'border-white/5 bg-white/[0.03] text-slate-400 hover:border-white/10 hover:text-slate-300'}`}>
-                        <span className="text-xs font-medium">{opt.label}</span>
+                  {/* 密码 */}
+                  <div className="login-input-group">
+                    <label className="login-input-label">密码</label>
+                    <div className="login-input-wrap">
+                      <span className="login-input-wrap__icon">🔒</span>
+                      <input type={regShowPwd ? 'text' : 'password'} value={regPassword}
+                        onChange={e => { setRegPassword(e.target.value); validatePassword(e.target.value); }}
+                        onBlur={e => validatePassword(e.target.value)}
+                        placeholder="输入密码（8-16位）" maxLength={16} autoComplete="new-password"
+                        className={inputClass(!!passwordError)} />
+                      <button type="button" onMouseDown={e => { e.preventDefault(); setRegShowPwd(!regShowPwd); }}
+                        className="login-pwd-toggle" tabIndex={-1}>
+                        {regShowPwd ? (
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: 18, height: 18 }}><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+                        ) : (
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: 18, height: 18 }}><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                        )}
+                      </button>
+                    </div>
+                    {passwordError && <p className="login-field-hint login-field-hint--error">{passwordError}</p>}
+                  </div>
+
+                  {/* 角色 */}
+                  <div className="login-input-group">
+                    <label className="login-input-label">选择角色</label>
+                    <div className="login-role-row">
+                      {roleOptions.map(opt => (
+                        <button key={opt.value} type="button" onClick={() => setRegRole(opt.value)}
+                          className={`login-role-chip ${regRole === opt.value ? 'login-role-chip--active' : ''}`}>{opt.label}</button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <button type="button" onClick={handleRegNext} className="login-submit-btn" style={{ marginTop: 8 }}>
+                    下一步 →
+                  </button>
+                </>
+              )}
+
+              {/* ====== Step 2: AI 画像采集 ====== */}
+              {regStep === 2 && (
+                <>
+                  <div style={{ marginBottom: 24 }}>
+                    <h2 style={{ fontSize: 24, fontWeight: 800, color: '#F1F5F9', letterSpacing: '-0.02em' }}>定制你的专属计划 🎯</h2>
+                    <p style={{ fontSize: 13, color: '#94A3B8', marginTop: 6 }}>选择目标岗位，AI 将为你定制面试训练方案</p>
+                  </div>
+
+                  <div className="position-card-grid">
+                    {POSITIONS.map(p => (
+                      <button key={p.id} type="button" onClick={() => setSelectedPosition(p.id)}
+                        className={`position-card ${selectedPosition === p.id ? 'position-card--selected' : ''}`}>
+                        <div className="position-card__icon">{p.icon}</div>
+                        <div className="position-card__name">{p.name}</div>
                       </button>
                     ))}
                   </div>
-                  <p className="text-xs text-slate-500 mt-2 text-center">
-                    {roleOptions.find((o) => o.value === regRole)?.desc}
-                  </p>
-                </div>
 
-                <button type="submit" disabled={regLoading || accountChecking}
-                  className="w-full bg-gradient-to-r from-indigo-500 to-purple-600 text-white py-3.5 rounded-xl
-                             font-semibold text-[15px] hover:from-indigo-600 hover:to-purple-700
-                             hover:shadow-xl hover:shadow-indigo-500/25
-                             active:scale-[0.98] transition-all duration-200 disabled:opacity-60
-                             flex items-center justify-center gap-2 cursor-pointer select-none">
-                  {regLoading ? (
-                    <><svg className="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" className="opacity-25"/><path d="M4 12a8 8 0 018-8" stroke="currentColor" strokeWidth="4" className="opacity-75"/></svg>注册中...</>
-                  ) : '完成注册'}
-                </button>
-              </form>
-
-              <p className="mt-8 text-center text-slate-500 text-xs">
-                注册即表示同意服务条款和隐私政策
-              </p>
+                  <div style={{ display: 'flex', gap: 10 }}>
+                    <button type="button" onClick={() => setRegStep(1)}
+                      style={{ flex: 1, padding: '15px 0', borderRadius: 14, border: '1px solid rgba(255,255,255,0.10)', background: 'transparent', color: '#94A3B8', fontSize: 14, fontWeight: 600, cursor: 'pointer' }}>
+                      ← 返回
+                    </button>
+                    <button type="button" onClick={handleRegister} disabled={regLoading}
+                      className="login-submit-btn" style={{ flex: 2 }}>
+                      {regLoading ? '注册中...' : selectedPosition ? '✨ 开启专属面试' : '跳过，直接开始'}
+                    </button>
+                  </div>
+                </>
+              )}
             </div>
           )}
+
+          {/* 底部：社交登录 */}
+          <div className="login-divider"><span>其他方式</span></div>
+          <div className="login-social-row">
+            <div className="login-social-btn" title="微信登录">💬</div>
+            <div className="login-social-btn" title="GitHub 登录">🐙</div>
+            <div className="login-social-btn" title="邮箱登录">📧</div>
+          </div>
         </div>
       </div>
     </div>

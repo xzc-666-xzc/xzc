@@ -199,7 +199,7 @@ export default function InterviewSetup() {
               </div>
             </div>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {positions.map((pos) => {
                 const isSelected = selectedPosition === pos.id;
                 const matchScore = positionMatches[pos.id] || 0;
@@ -207,12 +207,11 @@ export default function InterviewSetup() {
                   <button
                     key={pos.id}
                     onClick={() => { setSelectedPosition(pos.id); setError(''); }}
-                    className={`relative text-left p-5 rounded-2xl border-2 transition-all duration-200 ease-spring
+                    className={`relative text-left p-5 rounded-2xl border-2 transition-all duration-300 ease-spring
                       ${isSelected
-                        ? 'border-accent-500 bg-accent-50/50 shadow-md shadow-accent-500/5 ring-2 ring-accent-500/10'
-                        : 'border-warmBorder-light bg-white hover:border-slate-300 hover:shadow-sm'
+                        ? 'border-accent-500 bg-accent-50/50 shadow-md shadow-accent-500/10 ring-2 ring-accent-500/20 scale-[1.02]'
+                        : 'border-slate-100 bg-white hover:border-accent-300 hover:shadow-glow-purple hover:-translate-y-1'
                       }
-                      ${isSelected ? 'scale-[1.01]' : 'hover:scale-[1.005]'}
                       active:scale-[0.985]`}
                   >
                     {/* AI 匹配度标签 */}

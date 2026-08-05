@@ -9,6 +9,7 @@ import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.validation.BindException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
@@ -73,6 +74,17 @@ public class GlobalExceptionHandler {
     public R<Void> handleHttpMessageNotReadable(HttpMessageNotReadableException e) {
         log.warn("请求体格式错误: {}", e.getMessage());
         return R.fail(ResultCode.REQUEST_BODY_ERROR, "请求体格式错误，请检查JSON格式");
+    }
+
+    /**
+     * URL 路径参数类型转换失败（如传入非数字ID给 Long 类型参数）
+     */
+    @ExceptionHandler(MethodArgumentTypeMismatchException.class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public R<Void> handleMethodArgumentTypeMismatch(MethodArgumentTypeMismatchException e) {
+        log.warn("参数类型不匹配: name={}, value={}", e.getName(), e.getValue());
+        return R.fail(ResultCode.BAD_REQUEST,
+                "参数「" + e.getName() + "」的值「" + e.getValue() + "」格式不正确，应为数字");
     }
 
     // ==================== 业务异常 ====================

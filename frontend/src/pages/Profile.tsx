@@ -61,7 +61,7 @@ export default function Profile() {
 
   return (
     <div className="page-container animate-fade-in">
-      <h1 className="text-2xl font-extrabold text-slate-800 tracking-tight mb-8">个人中心</h1>
+      <h1 className="text-2xl font-extrabold text-ink-title tracking-tight mb-8">个人中心</h1>
 
       {successMsg && (
         <div className="mb-6 bg-emerald-50 border border-emerald-200 text-emerald-700 px-4 py-3 rounded-xl text-sm

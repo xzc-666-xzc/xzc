@@ -542,10 +542,15 @@ public class InterviewService extends ServiceImpl<InterviewMapper, Interview> {
     @Transactional
     public void forceEndInterview(Long interviewId, String reason) {
         Interview interview = this.getById(interviewId);
-        if (interview == null) return;
+        if (interview == null) {
+            throw new BusinessException(ResultCode.NOT_FOUND, "面试不存在");
+        }
         // 只处理进行中的面试
         if (!"in_progress".equals(interview.getStatus())
-            && !"pending".equals(interview.getStatus())) return;
+            && !"pending".equals(interview.getStatus())) {
+            throw new BusinessException(ResultCode.BAD_REQUEST,
+                "该面试当前状态为「" + interview.getStatus() + "」，无法终止。仅进行中或等待中的面试可被终止");
+        }
 
         // 如果还没生成评测，先生成（给个默认评分）
         long evalCount = evaluationMapper.selectCount(

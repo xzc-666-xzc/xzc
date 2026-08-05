@@ -31,6 +31,7 @@ public enum ResultCode {
     NOT_FOUND(40400, "资源不存在"),
 
     CONFLICT(40900, "资源冲突"),
+    PENDING_APPROVAL(40301, "账号待管理员审批"),
     RATE_LIMITED(42900, "请求过于频繁"),
 
     // ==================== 服务端错误 (5xxxx) ====================

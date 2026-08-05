@@ -208,11 +208,11 @@ export default function InterviewRoom() {
   const totalSecs = (config?.questionCount || 8) * 180;
 
   return (
-    <div className="h-full flex flex-col bg-[#0f1729] text-slate-200 interview-dark">
+    <div className="h-full flex flex-col bg-[#1E1F22] text-[#ECEDEE] interview-dark">
 
 
       {/* Top Bar */}
-      <div className="flex items-center justify-between px-6 py-3 bg-[#0f1729]/95 backdrop-blur-sm border-b border-white/5 shrink-0">
+      <div className="flex items-center justify-between px-6 py-3 bg-[#1E1F22]/95 backdrop-blur-sm border-b border-white/8 shrink-0">
         <div className="flex items-center gap-3">
           <span className="text-white font-medium text-sm">{config?.positionName}</span>
           <span className="px-2 py-0.5 bg-blue-500/20 text-blue-300 rounded-lg text-xs">{answeredCount}/{totalQuestions} 题</span>
@@ -307,9 +307,9 @@ export default function InterviewRoom() {
               <div className="w-9 h-9 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-bold text-xs shrink-0 shadow-glow">
                 AI
               </div>
-              <div className="max-w-[80%] bg-slate-800 rounded-2xl rounded-tl-sm px-5 py-4 border border-slate-700">
+              <div className="max-w-[80%] bg-[#313338] rounded-2xl rounded-tl-sm px-5 py-4 border border-[#3F4147]">
                 <p className="text-indigo-300 font-semibold text-xs mb-2">🤖 AI 面试官 · 第{currentQuestion.index + 1}题</p>
-                <p className="text-slate-200 leading-relaxed text-sm whitespace-pre-wrap">{currentQuestion.content}</p>
+                <p className="text-[#ECEDEE] leading-relaxed text-sm whitespace-pre-wrap">{currentQuestion.content}</p>
               </div>
             </div>
           )}
@@ -318,7 +318,7 @@ export default function InterviewRoom() {
           {aiThinking && (
             <div className="flex gap-3 items-start">
               <div className="w-9 h-9 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-bold text-xs shrink-0">AI</div>
-              <div className="bg-white/5 rounded-2xl rounded-tl-sm px-5 py-4 flex items-center gap-3">
+              <div className="bg-[#2B2D31] rounded-2xl rounded-tl-sm px-5 py-4 flex items-center gap-3">
                 <div className="flex gap-1">
                   {[0, 1, 2].map(i => <div key={i} className="w-2 h-2 bg-indigo-400 rounded-full animate-bounce" style={{ animationDelay: `${i * 0.15}s` }} />)}
                 </div>
@@ -331,7 +331,7 @@ export default function InterviewRoom() {
           {currentFeedback && !aiThinking && (
             <div className="flex gap-3 items-start animate-slide-up">
               <div className="w-9 h-9 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-bold text-xs shrink-0">AI</div>
-              <div className="max-w-[80%] bg-slate-800 rounded-2xl rounded-tl-sm px-5 py-4 border border-indigo-500/30">
+              <div className="max-w-[80%] bg-[#313338] rounded-2xl rounded-tl-sm px-5 py-4 border border-indigo-500/20">
                 <p className="text-indigo-300 font-semibold text-xs mb-3">🤖 AI 面试官点评</p>
                 <div className="flex items-center gap-3 mb-3">
                   <span className={`text-3xl font-bold ${currentFeedback.overallScore >= 80 ? 'text-green-400' : currentFeedback.overallScore >= 60 ? 'text-amber-400' : 'text-red-400'}`}>
@@ -374,7 +374,7 @@ export default function InterviewRoom() {
 
         {/* AI 助手右侧面板 */}
         {showAIPanel && (
-          <div className="hidden lg:block w-72 bg-white/3 border-l border-white/8 overflow-auto p-4 animate-fade-in shrink-0">
+          <div className="hidden lg:block w-72 bg-[#2B2D31] border-l border-[#3F4147] overflow-auto p-4 animate-fade-in shrink-0">
             <div className="flex items-center justify-between mb-4">
               <h4 className="text-sm font-semibold text-indigo-300 flex items-center gap-2">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4"><polygon points="12,2 15,9 22,9 16,14 18,22 12,17 6,22 8,14 2,9 9,9"/></svg>
@@ -411,12 +411,12 @@ export default function InterviewRoom() {
 
       {/* 输入区 */}
       {!waitingForNext && (
-        <div className="px-6 py-4 bg-[#060b14] border-t-2 border-indigo-500/40 shrink-0">
+        <div className="px-6 py-4 bg-[#1A1B1E] border-t-2 border-indigo-500/30 shrink-0">
           {/* 快捷短语 */}
           <div className="flex gap-2 mb-3 flex-wrap">
             {QUICK_REPLIES.map(phrase => (
               <button key={phrase} onClick={() => setCurrentInput(prev => prev + (prev ? ' ' : '') + phrase)}
-                className="px-4 py-2 bg-slate-700/40 border border-slate-500/20 rounded-xl text-sm text-slate-300 hover:bg-slate-600/70 hover:border-slate-400/40 hover:text-white hover:shadow-lg hover:shadow-slate-900/30 active:border-indigo-400/60 active:bg-slate-600 active:scale-[0.97] transition-all duration-200 cursor-pointer select-none">
+                className="px-4 py-2 bg-[#2B2D31] border border-[#3F4147] rounded-xl text-sm text-[#B5BAC1] hover:bg-[#383A40] hover:border-[#4E5058] hover:text-white hover:shadow-lg active:border-indigo-400/60 active:scale-[0.97] transition-all duration-200 cursor-pointer select-none">
                 {phrase}
               </button>
             ))}
@@ -449,7 +449,7 @@ export default function InterviewRoom() {
                 placeholder={config?.mode === 'voice' ? '语音内容将自动转为文字...' : '输入你的回答... (Enter 发送，Shift+Enter 换行)'}
                 disabled={aiThinking || isPaused}
                 rows={2}
-                className="w-full bg-[#1a2236] border border-slate-600/50 rounded-xl px-4 py-3 text-slate-100 placeholder-slate-500 resize-none outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/30 transition-all text-sm disabled:opacity-40"
+                className="w-full bg-[#2B2D31] border border-[#3F4147] rounded-xl px-4 py-3 text-[#ECEDEE] placeholder:text-[#949BA4] resize-none outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/30 transition-all text-sm disabled:opacity-40"
               />
               <span className="absolute bottom-2 right-3 text-xs text-slate-400">{currentInput.length} 字</span>
             </div>

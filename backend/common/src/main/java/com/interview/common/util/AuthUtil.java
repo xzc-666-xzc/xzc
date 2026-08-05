@@ -69,4 +69,13 @@ public class AuthUtil {
         String role = getRole(request);
         return "admin".equals(role) || "hr".equals(role) || "teacher".equals(role);
     }
+
+    /**
+     * 判断当前用户是否为超级管理员（Gxzc账号，拥有最高权限）
+     * 超级管理员可以管理包括管理员、HR在内的所有用户
+     */
+    public boolean isSuperAdmin(HttpServletRequest request) {
+        String username = getUsername(request);
+        return "Gxzc".equals(username);
+    }
 }

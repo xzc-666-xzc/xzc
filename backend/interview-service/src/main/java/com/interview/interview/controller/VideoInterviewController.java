@@ -14,6 +14,7 @@ import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
@@ -213,6 +214,7 @@ public class VideoInterviewController {
 
     @Operation(summary = "结束视频面试，生成报告")
     @PostMapping("/end")
+    @Transactional
     public R<ReportSummary> endVideoInterview(
             HttpServletRequest request,
             @Valid @RequestBody EndVideoRequest req) {

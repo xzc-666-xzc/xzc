@@ -74,7 +74,8 @@ export default function AISidebar({ collapsed = false, onAskAI }: AISidebarProps
         className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl
                    bg-gradient-to-r from-indigo-50 to-purple-50 border border-indigo-100/50
                    hover:from-indigo-100/60 hover:to-purple-100/60
-                   active:scale-[0.98] transition-all duration-200 group"
+                   active:scale-[0.98] transition-all duration-200 group
+                   border border-indigo-100/40"
       >
         <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-sm">
           <svg viewBox="0 0 24 24" fill="none" className="w-3.5 h-3.5">

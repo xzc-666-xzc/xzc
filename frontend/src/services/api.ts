@@ -104,6 +104,51 @@ export interface OngoingInterview {
   isTimeout: boolean;
 }
 
+// ==================== 管理员用户管理服务 ====================
+export const adminUserService = {
+  /** 获取所有用户列表 */
+  listUsers: () =>
+    http.get<ApiResponse<AdminUserRecord[]>>('/user/admin/users'),
+
+  /** 获取待审批用户列表 */
+  getPending: () =>
+    http.get<ApiResponse<AdminUserRecord[]>>('/user/admin/pending'),
+
+  /** 审批通过用户 */
+  approveUser: (userId: string) =>
+    http.post<ApiResponse<{ message: string }>>(`/user/admin/users/${userId}/approve`),
+
+  /** 拒绝用户注册 */
+  rejectUser: (userId: string) =>
+    http.post<ApiResponse<{ message: string }>>(`/user/admin/users/${userId}/reject`),
+
+  /** 冻结用户 */
+  freezeUser: (userId: string) =>
+    http.put<ApiResponse<{ message: string }>>(`/user/admin/users/${userId}/freeze`),
+
+  /** 解冻用户 */
+  unfreezeUser: (userId: string) =>
+    http.put<ApiResponse<{ message: string }>>(`/user/admin/users/${userId}/unfreeze`),
+
+  /** 删除用户（仅超级管理员） */
+  deleteUser: (userId: string) =>
+    http.delete<ApiResponse<{ message: string }>>(`/user/admin/users/${userId}`),
+
+  /** 修改用户角色（仅超级管理员） */
+  changeRole: (userId: string, role: string) =>
+    http.put<ApiResponse<{ message: string }>>(`/user/admin/users/${userId}/role`, { role }),
+};
+
+export interface AdminUserRecord {
+  id: string;
+  username: string;
+  realName: string;
+  email: string;
+  role: string;
+  status: number;
+  createdAt: string;
+}
+
 // ==================== 岗位服务 ====================
 export const positionService = {
   list: (params?: { category?: string; keyword?: string }) =>
